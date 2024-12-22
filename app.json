@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "sidecmobileapp",
-    "slug": "sidecedu",
+    "slug": "sidecmobileprev",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.kaycoder.sidecmobileapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -29,9 +30,9 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "14871e80-376c-4127-b931-1002d6898e8a"
+        "projectId": "71bdadc0-5d35-4bb4-96e3-1e91861a9e80"
       }
     },
-    "owner": "kaycodernative"
+    "owner": "kaycoder"
   }
 }

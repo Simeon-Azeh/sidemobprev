@@ -1,26 +1,56 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Dimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
 import Feather from '@expo/vector-icons/Feather';
-import { useNavigation } from '@react-navigation/native'; // Ensure you have access to navigation
+import { useNavigation } from '@react-navigation/native';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { auth } from '../../../firebaseConfig';
 
 const { width: screenWidth } = Dimensions.get('window');
+
 export default function StatsCard() {
-  const navigation = useNavigation(); // Get the navigation object
+  const navigation = useNavigation();
+  const [savedCoursesCount, setSavedCoursesCount] = useState(0);
+  const [certificatesCount, setCertificatesCount] = useState(0);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const db = getFirestore();
+
+          // Fetch saved courses count
+          const savedCoursesQuery = query(collection(db, 'savedCourses'), where('email', '==', user.email));
+          const savedCoursesSnapshot = await getDocs(savedCoursesQuery);
+          setSavedCoursesCount(savedCoursesSnapshot.size);
+
+          // Fetch certificates count
+          const certificatesQuery = query(collection(db, 'certificates'), where('email', '==', user.email));
+          const certificatesSnapshot = await getDocs(certificatesQuery);
+          setCertificatesCount(certificatesSnapshot.size);
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   const stats = [
     {
       title: 'Saved Courses',
-      count: 12,
+      count: savedCoursesCount,
       icon: 'bookmark',
-      screen: 'SavedCourses' // Specify the screen to navigate to
+      screen: 'SavedCourses'
     },
     {
       title: 'Certificates',
-      count: 5,
+      count: certificatesCount,
       icon: 'star',
-      screen: 'Certificates' // Specify the screen to navigate to
+      screen: 'Certificates'
     }
   ];
 
@@ -36,9 +66,9 @@ export default function StatsCard() {
             borderColor: Colors.PRIMARY,
             padding: 15,
             alignItems: 'center',
-            width: screenWidth * 0.45, 
+            width: screenWidth * 0.45,
           }}
-          onPress={() => navigation.navigate(item.screen)} // Navigate to the specified screen
+          onPress={() => navigation.navigate(item.screen)}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <Feather name={item.icon} size={25} color={Colors.PRIMARY} />

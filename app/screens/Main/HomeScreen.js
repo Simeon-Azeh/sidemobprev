@@ -1,51 +1,54 @@
-import React from 'react';
-import { View, Text, Dimensions, Image, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Dimensions, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Carousel from 'react-native-snap-carousel';
 import { MaterialIcons } from '@expo/vector-icons'; // Import MaterialIcons or any other icon set you prefer
 import * as Progress from 'react-native-progress'; // Import the progress circle component
+import SkeletonPlaceholder from 'react-native-skeleton-placeholder'; // Skeleton Loader
 import Header from '../../components/General/Header';
 import GreetingCard from '../../components/General/GreetingCard';
 import Colors from '../../../assets/Utils/Colors';
 import StatsCard from '../../components/HomeScreen/StatsCard';
-import BarChart from '../../components/HomeScreen/BarChart';
+import StudyTracker from '../../components/HomeScreen/StudyTracker';
+
 import RecommendedCoursesCarousel from '../../components/HomeScreen/RecommendedCoursesCarousel';
 import Feather from '@expo/vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
-
-const data = [
-  {
-    title: 'Ultimate Python',
-    category: 'Programming',
-    image: 'https://img.freepik.com/free-vector/colourful-illustration-programmer-working_23-2148281410.jpg?t=st=1723237216~exp=1723240816~hmac=7b9fc680514a272e0023377b9dab951e498ad209b16097797a8a85b56e66dd6a&w=740',
-    progress: 0.4, // Progress for the course (40%)
-  },
-  {
-    title: 'Computer Science',
-    category: 'Science',
-    image: 'https://img.freepik.com/free-vector/gradient-top-view-laptop-background_52683-6291.jpg?t=st=1723065545~exp=1723069145~hmac=961c9dd607942a47415ea68a2f399920924699baf5f127abf2fe969091fcf2cc&w=740',
-    progress: 0.7, // Progress for the course (70%)
-  },
-  {
-    title: 'Flutter for Beginners',
-    category: 'Programming',
-    image: 'https://img.freepik.com/free-photo/representations-user-experience-interface-design_23-2150104485.jpg?t=st=1723065936~exp=1723069536~hmac=3efbbbdecb111701557d4631157f58a39ff330892ed93f069213c6701b3df930&w=740',
-    progress: 0.5, // Progress for the course (50%)
-  },
-  {
-    title: 'Data Structures',
-    category: 'Education',
-    image: 'https://img.freepik.com/free-vector/abstract-modern-big-data-background_23-2147909569.jpg?t=st=1723065989~exp=1723069589~hmac=692192eb5c28dc30dc0905f9b2f8a1e1b29e0c876b80251f39d87e6ef3b7f299&w=740',
-    progress: 0.9, // Progress for the course (90%)
-  },
-];
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { auth } from '../../../firebaseConfig';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
+import HomeScreenSkeleton from '../../components/HomeScreenSkeleton';
 
 export default function HomeScreen() {
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
   const navigation = useNavigation();
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const sliderWidth = screenWidth;
   const itemWidth = screenWidth * 0.8; // Adjust item width as needed
+
+  useEffect(() => {
+    const fetchEnrolledCourses = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const q = query(collection(getFirestore(), 'enrolledCourses'), where('email', '==', user.email));
+          const querySnapshot = await getDocs(q);
+          const courses = [];
+          querySnapshot.forEach((doc) => {
+            courses.push(doc.data());
+          });
+          setEnrolledCourses(courses);
+        }
+      } catch (error) {
+        console.error("Error fetching enrolled courses:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEnrolledCourses();
+  }, []);
 
   const renderItem = ({ item }) => {
     return (
@@ -67,7 +70,7 @@ export default function HomeScreen() {
             width: screenWidth * 0.15,
             height: screenWidth * 0.15,
             borderRadius: 50,
-           marginTop: screenHeight * 0.015,
+            marginTop: screenHeight * 0.015,
             borderWidth: 1,
             borderColor: Colors.WHITE,
           }}
@@ -77,7 +80,6 @@ export default function HomeScreen() {
           marginLeft: 10,
           justifyContent: 'center',
         }}>
-        
           <Text style={{
             fontSize: 16,
             fontFamily: 'Poppins-Medium',
@@ -89,7 +91,7 @@ export default function HomeScreen() {
             marginBottom: 5,
           }}>
             <MaterialIcons
-              name="category" // Replace with the appropriate icon name
+              name="category"
               size={14}
               color={Colors.LIGHT_GRAY}
               style={{ marginRight: 5 }}
@@ -104,7 +106,7 @@ export default function HomeScreen() {
           size={50}
           progress={item.progress}
           showsText
-          formatText={() => `${Math.round(item.progress * 100)}%`} // Display progress as percentage
+          formatText={() => `${Math.round(item.progress * 100)}%`}
           color={Colors.WHITE}
           style={{
             alignSelf: 'center',
@@ -117,42 +119,166 @@ export default function HomeScreen() {
   return (
     <View style={{ flex: 1 }}>
       <Header />
-      <ScrollView>
+      <ScrollView nestedScrollEnabled={true}>
         <View style={{ paddingHorizontal: 15, marginVertical: 15 }}>
           <GreetingCard />
         </View>
         <View>
-          <Carousel
-            data={data}
-            renderItem={renderItem}
-            sliderWidth={sliderWidth}
-            itemWidth={itemWidth}
-            inactiveSlideScale={0.9} // Optional: Adjust scaling of inactive slides
-            inactiveSlideOpacity={0.7} // Optional: Adjust opacity of inactive slides
-          />
-           <TouchableOpacity style={{ marginTop: 0,marginBottom: 10, borderWidth: 1, borderColor: Colors.PRIMARY, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10, justifyContent: 'center', alignItems: 'center', display: 'flex', width: '40%', alignSelf: 'center', backgroundColor: Colors.WHITE, flexDirection: 'row' }} onPress={() => navigation.navigate('EnrolledCourses')}>
-            <Text style={{ color: Colors.PRIMARY, fontSize: screenWidth * 0.029, fontFamily: 'Poppins-Medium', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}>Enrolled Courses <Feather name="chevron-right" size={14} color={Colors.PRIMARY} style={{ paddingTop: 10, marginTop: 10 }} /></Text>
+          {loading ? (
+            <View>
+              <HomeScreenSkeleton />
+            </View>
+          ) : enrolledCourses.length === 0 ? (
+            <View
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                flex: 1,
+                padding: 20,
+                backgroundColor: Colors.LIGHT_GRAY,
+                borderRadius: 10,
+                marginHorizontal: 15,
+                marginVertical: 5,
+                marginBottom: 20,
+              }}
+            >
+              <FontAwesome6
+                name="bars-progress"
+                size={50}
+                color={Colors.PRIMARY}
+                style={{ marginBottom: 15 }}
+              />
+              <Text
+                style={{
+                  fontSize: screenWidth * 0.04,
+                  fontFamily: 'Poppins-Medium',
+                  color: Colors.SECONDARY,
+                  textAlign: 'center',
+                }}
+              >
+                You are not enrolled in any courses yet.
+              </Text>
+              <TouchableOpacity
+                style={{
+                  marginTop: 20,
+                  paddingVertical: 12,
+                  paddingHorizontal: 20,
+                  backgroundColor: Colors.PRIMARY,
+                  borderRadius: 25,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
+                onPress={() => navigation.navigate('Courses')}
+              >
+                <Text
+                  style={{
+                    color: Colors.WHITE,
+                    fontFamily: 'Poppins-Medium',
+                    fontSize: screenWidth * 0.035,
+                    marginRight: 10,
+                  }}
+                >
+                  Explore Courses
+                </Text>
+                <Feather name="chevron-right" size={18} color={Colors.WHITE} />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <Carousel
+              data={enrolledCourses}
+              renderItem={renderItem}
+              sliderWidth={sliderWidth}
+              itemWidth={itemWidth}
+              inactiveSlideScale={0.9}
+              inactiveSlideOpacity={0.7}
+            />
+          )}
+          <TouchableOpacity
+            style={{
+              marginTop: 0,
+              marginBottom: 10,
+              borderWidth: 1,
+              borderColor: Colors.PRIMARY,
+              borderRadius: 10,
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '40%',
+              alignSelf: 'center',
+              backgroundColor: Colors.WHITE,
+              flexDirection: 'row',
+            }}
+            onPress={() => navigation.navigate('EnrolledCourses')}
+          >
+            <Text
+              style={{
+                color: Colors.PRIMARY,
+                fontSize: screenWidth * 0.029,
+                fontFamily: 'Poppins-Medium',
+              }}
+            >
+              Enrolled Courses
+            </Text>
+            <Feather
+              name="chevron-right"
+              size={14}
+              color={Colors.PRIMARY}
+              style={{ marginLeft: 5 }}
+            />
           </TouchableOpacity>
-          
         </View>
-       
         <View style={{ paddingHorizontal: 10 }}>
           <StatsCard />
         </View>
-        <View>
-          <BarChart/>
-        </View>
-        <View style={{  marginBottom: 20 }}>
-        <Text style={{ fontSize: screenWidth * 0.045, marginBottom: 10, fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, marginLeft: 20 }}>
-        Recommended for you
-      </Text>
+        <StudyTracker />
+        <View style={{ marginBottom: 20 }}>
+          <Text
+            style={{
+              fontSize: screenWidth * 0.045,
+              marginBottom: 10,
+              fontFamily: 'Poppins-Medium',
+              color: Colors.SECONDARY,
+              marginLeft: 20,
+              marginTop: 20,
+            }}
+          >
+            Recommended for you
+          </Text>
           <RecommendedCoursesCarousel />
-      
-          <TouchableOpacity style={{ marginTop: 20,marginBottom: 10, borderWidth: 1, borderColor: Colors.PRIMARY, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 10, justifyContent: 'center', alignItems: 'center', display: 'flex', width: '40%', alignSelf: 'center', backgroundColor: Colors.WHITE }} onPress={() => navigation.navigate('Courses')}>
-            <Text style={{ color: Colors.PRIMARY, fontSize: screenWidth * 0.029, fontFamily: 'Poppins-Medium', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'row', textAlign: 'center', flexDirection: 'row' }}>View More <Feather name="chevron-right" size={14} color={Colors.PRIMARY} style={{ paddingTop: 10, marginTop: 10 }} /></Text>
+          <TouchableOpacity
+            style={{
+              marginTop: 20,
+              marginBottom: 10,
+              borderWidth: 1,
+              borderColor: Colors.PRIMARY,
+              borderRadius: 10,
+              paddingHorizontal: 20,
+              paddingVertical: 10,
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: '40%',
+              alignSelf: 'center',
+              backgroundColor: Colors.WHITE,
+            }}
+            onPress={() => navigation.navigate('Courses')}
+          >
+            <Text
+              style={{
+                color: Colors.PRIMARY,
+                fontSize: screenWidth * 0.029,
+                fontFamily: 'Poppins-Medium',
+              }}
+            >
+              View More
+            </Text>
+            <Feather
+              name="chevron-right"
+              size={14}
+              color={Colors.PRIMARY}
+              style={{ marginLeft: 5 }}
+            />
           </TouchableOpacity>
-          
-        
         </View>
       </ScrollView>
     </View>
