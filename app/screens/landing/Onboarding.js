@@ -1,8 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Swiper from 'react-native-swiper';
 import { Picker } from '@react-native-picker/picker';
+import { getFirestore, doc, setDoc, updateDoc } from 'firebase/firestore';
+import { auth } from '../../../firebaseConfig';
+import { sendEmailVerification } from 'firebase/auth';
 
 import Colors from '../../../assets/Utils/Colors';
 import { useNavigation } from '@react-navigation/native';
@@ -13,24 +16,42 @@ import welcome4 from '../../../assets/Images/Onboarding4.png';
 
 // Sample avatar images
 const avatars = [
-  { id: '1', source: require('../../../assets/Images/avatar7.jpg'), label: 'Avatar 1' },
-  { id: '2', source: require('../../../assets/Images/avatar3.jpg'), label: 'Avatar 2' },
-  { id: '3', source: require('../../../assets/Images/avatar4.jpg'), label: 'Avatar 3' },
-  { id: '4', source: require('../../../assets/Images/avatar6.jpg'), label: 'Avatar 4' },
+  { id: '1', source: 'https://img.freepik.com/premium-vector/student-avatar-illustration-user-profile-icon-youth-avatar_118339-4395.jpg', label: 'Avatar 1' },
+  { id: '2', source: 'https://img.freepik.com/premium-vector/logo-kid-gamer_573604-742.jpg', label: 'Avatar 2' },
+  { id: '3', source: 'https://img.freepik.com/premium-vector/young-man-avatar-character-due-avatar-man-vector-icon-cartoon-illustration_1186924-4432.jpg', label: 'Avatar 3' },
+  { id: '4', source: 'https://cdn3.iconfinder.com/data/icons/avatars-9/145/Avatar_Dog-512.png', label: 'Avatar 4' },
 ];
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const db = getFirestore();
 
 const Onboarding = () => {
   const swiperRef = useRef(null);
   const navigation = useNavigation();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [selectedGender, setSelectedGender] = useState('');
+  const [city, setCity] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('');
-  const [verificationCode, setVerificationCode] = useState(['', '', '', '', '', '']);
   const [selectedAvatar, setSelectedAvatar] = useState(null);
 
-  const handleGetStarted = () => {
-    navigation.navigate('Drawer');
+  const handleGetStarted = async () => {
+    try {
+      const user = auth.currentUser;
+      await setDoc(doc(db, 'users', user.uid), {
+        firstName,
+        lastName,
+        gender: selectedGender,
+        city,
+        country: selectedCountry,
+        avatar: selectedAvatar,
+        onboardingCompleted: true,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+      navigation.navigate('Drawer');
+    } catch (error) {
+      console.error("Error updating user document:", error);
+    }
   };
 
   const handleNext = () => {
@@ -39,18 +60,40 @@ const Onboarding = () => {
     }
   };
 
-  const handleVerificationCodeChange = (index, value) => {
-    const newVerificationCode = [...verificationCode];
-    newVerificationCode[index] = value;
-    setVerificationCode(newVerificationCode);
+  const handleSendVerificationLink = async () => {
+    try {
+      const user = auth.currentUser;
+      await sendEmailVerification(user);
+      Alert.alert('Verification Email Sent', `A verification email will be sent to ${user.email}. Please verify before you continue.`);
+    } catch (error) {
+      console.error("Error sending verification email:", error);
+    }
+  };
+
+  const handleCheckVerificationStatus = async () => {
+    try {
+      const user = auth.currentUser;
+      await user.reload();
+      if (user.emailVerified) {
+        await updateDoc(doc(db, 'users', user.uid), {
+          emailVerified: true,
+          updatedAt: new Date().toISOString()
+        });
+        handleNext();
+      } else {
+        Alert.alert('Email not verified', 'Please verify your email before proceeding.');
+      }
+    } catch (error) {
+      console.error("Error checking email verification status:", error);
+    }
   };
 
   const renderAvatar = ({ item }) => (
     <TouchableOpacity
-      style={[styles.avatarContainer, selectedAvatar === item.id && styles.selectedAvatar]}
-      onPress={() => setSelectedAvatar(item.id)}
+      style={[styles.avatarContainer, selectedAvatar === item.source && styles.selectedAvatar]}
+      onPress={() => setSelectedAvatar(item.source)}
     >
-      <Image source={item.source} style={styles.avatarImage} />
+      <Image source={{ uri: item.source }} style={styles.avatarImage} />
       <Text style={styles.avatarLabel}>{item.label}</Text>
     </TouchableOpacity>
   );
@@ -75,13 +118,12 @@ const Onboarding = () => {
           <View style={styles.slideContainer}>
             <Image source={welcome1} style={styles.image} />
             <View style={styles.textContainer}>
-              <Text style={styles.title}>Thank you for creating an account with us!</Text>
+              <Text style={styles.title}>Welcome to the Learning Journey! 🎉</Text>
               <Text style={styles.subtitle}>
-                Welcome to your onboarding, we need some information to get started. This will help us personalize your experience.
+                We're excited to have you with us! 😊 To get started, we just need a little bit of information to personalize your learning experience and make it even more amazing. 📚✨
               </Text>
               <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-                <Text style={styles.nextButtonText}>Get Started</Text>
-                <Icon name="arrow-forward" size={15} color={Colors.PRIMARY} />
+                <Text style={styles.nextButtonText}> Let's Begin 🚀 </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -95,6 +137,8 @@ const Onboarding = () => {
                 keyboardType="default"
                 textContentType="givenName"
                 placeholder="First Name"
+                value={firstName}
+                onChangeText={setFirstName}
                 style={styles.textInput}
               />
               <TextInput
@@ -102,6 +146,8 @@ const Onboarding = () => {
                 keyboardType="default"
                 textContentType="familyName"
                 placeholder="Last Name"
+                value={lastName}
+                onChangeText={setLastName}
                 style={styles.textInput}
               />
               <View style={styles.pickerContainer}>
@@ -121,6 +167,8 @@ const Onboarding = () => {
                 keyboardType="default"
                 textContentType="addressCity"
                 placeholder="City"
+                value={city}
+                onChangeText={setCity}
                 style={styles.textInput}
               />
               <View style={styles.pickerContainer}>
@@ -149,21 +197,12 @@ const Onboarding = () => {
             <View style={[styles.textContainer, styles.fullHeightContainer]}>
               <Text style={styles.title}>Verify Account</Text>
               <Text style={styles.subtitle}>
-                A verification code was sent to your email, please enter it below.
+                A verification email will be sent to {auth.currentUser?.email}. Please verify before you continue.
               </Text>
-              <View style={styles.codeRow}>
-                {verificationCode.map((value, index) => (
-                  <TextInput
-                    key={index}
-                    value={value}
-                    onChangeText={(text) => handleVerificationCodeChange(index, text)}
-                    keyboardType="numeric"
-                    maxLength={1}
-                    style={styles.codeInput}
-                  />
-                ))}
-              </View>
-              <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+              <TouchableOpacity style={styles.nextButton} onPress={handleSendVerificationLink}>
+                <Text style={styles.nextButtonText}>Send Link ➤ </Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.nextButton} onPress={handleCheckVerificationStatus}>
                 <Text style={styles.nextButtonText}>Next</Text>
                 <Icon name="arrow-forward" size={15} color={Colors.PRIMARY} />
               </TouchableOpacity>
@@ -193,6 +232,7 @@ const Onboarding = () => {
     </KeyboardAvoidingView>
   );
 };
+
 const styles = StyleSheet.create({
   wrapper: {},
   slideContainer: {
@@ -210,14 +250,12 @@ const styles = StyleSheet.create({
   textContainer: {
     width: '100%',
     paddingHorizontal: 20,
-    borderTopLeftRadius: 80,
-    borderTopRightRadius: 80,
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
     backgroundColor: Colors.PRIMARY,
-   
     flex: 1,
     justifyContent: 'center',
     marginTop: -screenHeight * 0.1,
-
   },
   secondaryContainer: {
     backgroundColor: Colors.WHITE,
@@ -225,7 +263,6 @@ const styles = StyleSheet.create({
   fullHeightContainer: {
     backgroundColor: Colors.PRIMARY,
     justifyContent: 'center',
-   
   },
   title: {
     fontSize: screenWidth * 0.06,
@@ -256,7 +293,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderColor: Colors.PRIMARY,
     paddingHorizontal: 5,
-   
     borderWidth: 1,
     fontFamily: 'Poppins-Medium',
     fontSize: screenWidth * 0.035,
@@ -338,7 +374,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.LIGHT_GRAY,
     borderRadius: 10,
     padding: 10,
-    
   },
   selectedAvatar: {
     borderColor: Colors.PRIMARY,
@@ -358,4 +393,5 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
   },
 });
+
 export default Onboarding;

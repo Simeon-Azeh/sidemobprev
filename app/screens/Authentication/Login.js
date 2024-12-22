@@ -1,17 +1,70 @@
-import { View, Text, Image, TextInput, TouchableOpacity, Dimensions, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import React from 'react';
+import { View, Text, Image, TextInput, TouchableOpacity, Dimensions, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, StyleSheet, Modal } from 'react-native';
+import React, { useState } from 'react';
 import LoginImg from '../../../assets/Images/LoginImg.png';
 import Colors from '../../../assets/Utils/Colors';
 import GoogleIcon from '../../../assets/Images/GoogleIcon.png';
 import { useNavigation } from '@react-navigation/native';
+import { auth } from '../../../firebaseConfig'; // Adjust the path as necessary
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect } from 'firebase/auth';
+import { Feather } from '@expo/vector-icons';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const db = getFirestore();
 
 export default function LoginScreen() {
   const navigation = useNavigation();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
 
-  const handleLogin = () => {
-    navigation.navigate('Drawer'); // Navigate to the Drawer Navigator
+  const checkOnboardingStatus = async (uid) => {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists() && userDoc.data().onboardingCompleted) {
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking onboarding status:", error);
+      return false;
+    }
+  };
+
+  const handleLogin = async () => {
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const isOnboarded = await checkOnboardingStatus(userCredential.user.uid);
+      navigation.navigate(isOnboarded ? 'Drawer' : 'Onboarding');
+    } catch (error) {
+      setErrorMessage(error.message);
+      setModalVisible(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithRedirect(auth, provider);
+      const isOnboarded = await checkOnboardingStatus(userCredential.user.uid);
+      navigation.navigate(isOnboarded ? 'Drawer' : 'Onboarding');
+    } catch (error) {
+      setErrorMessage(error.message);
+      setModalVisible(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -38,7 +91,7 @@ export default function LoginScreen() {
             flex: 1, // Ensure it takes up the remaining space
             backgroundColor: Colors.PRIMARY,
             width: '100%',
-            borderTopLeftRadius: 80,
+            borderTopLeftRadius: 0,
             borderTopRightRadius: 80,
             padding: 20,
             paddingTop: 20, // Add padding at the top for better spacing
@@ -69,6 +122,8 @@ export default function LoginScreen() {
                 keyboardType="email-address"
                 textContentType="emailAddress"
                 placeholder="Enter Email"
+                value={email}
+                onChangeText={setEmail}
                 style={{ 
                   width: screenWidth * 0.9, 
                   height: screenHeight * 0.06, 
@@ -83,24 +138,33 @@ export default function LoginScreen() {
                   fontSize: screenWidth * 0.035
                 }}
               />
-              <TextInput
-                autoCompleteType="password"
-                secureTextEntry={true}
-                placeholder="Enter Password"
-                style={{ 
-                  width: screenWidth * 0.9, 
-                  height: screenHeight * 0.06, 
-                  borderRadius: 10, 
-                  marginTop: 20, 
-                  borderWidth: 1, 
-                  borderColor: Colors.WHITE, 
-                  backgroundColor: Colors.WHITE, 
-                  paddingLeft: 20, 
-                  color: Colors.SECONDARY, 
-                  fontFamily: 'Poppins-Medium', 
-                  fontSize: screenWidth * 0.035 
-                }}
-              />
+              <View style={{ marginTop: 20 }}>
+                <TextInput
+                  autoCompleteType="password"
+                  secureTextEntry={!passwordVisible}
+                  placeholder="Enter Password"
+                  value={password}
+                  onChangeText={setPassword}
+                  style={{ 
+                    width: screenWidth * 0.9, 
+                    height: screenHeight * 0.06, 
+                    borderRadius: 10, 
+                    borderWidth: 1, 
+                    borderColor: Colors.WHITE, 
+                    backgroundColor: Colors.WHITE, 
+                    paddingLeft: 20, 
+                    color: Colors.SECONDARY, 
+                    fontFamily: 'Poppins-Medium', 
+                    fontSize: screenWidth * 0.035 
+                  }}
+                />
+                <TouchableOpacity 
+                  onPress={() => setPasswordVisible(!passwordVisible)} 
+                  style={styles.eyeIcon}
+                >
+                  <Feather name={passwordVisible ? 'eye-off' : 'eye'} size={24} color={Colors.PRIMARY} />
+                </TouchableOpacity>
+              </View>
               <Text 
                 style={{ 
                   color: Colors.WHITE, 
@@ -129,14 +193,19 @@ export default function LoginScreen() {
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}
+                disabled={loading}
               >
-                <Text style={{ 
-                  color: Colors.PRIMARY, 
-                  fontFamily: 'Poppins-Medium', 
-                  fontSize: screenWidth * 0.035 
-                }}>
-                  Log In
-                </Text>
+                {loading ? (
+                  <ActivityIndicator size="small" color={Colors.PRIMARY} />
+                ) : (
+                  <Text style={{ 
+                    color: Colors.PRIMARY, 
+                    fontFamily: 'Poppins-Medium', 
+                    fontSize: screenWidth * 0.035 
+                  }}>
+                    Log In
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
             <Text style={{ 
@@ -160,6 +229,8 @@ export default function LoginScreen() {
                 alignItems: 'center', 
                 justifyContent: 'center' 
               }}
+              onPress={handleGoogleAuth}
+              disabled={loading}
             >
               <Image source={GoogleIcon} style={{ width: 35, height: 35 }} />
               <Text style={{ 
@@ -200,6 +271,82 @@ export default function LoginScreen() {
           </View>
         </View>
       </ScrollView>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>{errorMessage}</Text>
+            <TouchableOpacity
+              style={[styles.button, styles.buttonClose]}
+              onPress={() => setModalVisible(!modalVisible)}
+            >
+              <Text style={styles.textStyle}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
+
+const styles = StyleSheet.create({
+  eyeIcon: {
+    position: 'absolute',
+    right: 20,
+    top: 15,
+    zIndex: 1,
+    color: '#9835FF',
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Adds a dimmed background for better focus
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 8,
+    width: '90%', // Wider modal for better content placement
+  },
+  button: {
+    borderRadius: 10, // More rounded button
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    elevation: 2,
+  },
+  buttonClose: {
+    backgroundColor: Colors.PRIMARY, // Ensure Colors.PRIMARY is a good accent color
+  },
+  textStyle: {
+    color: 'white',
+    fontWeight: '600',
+    textAlign: 'center',
+    fontSize: 16, // Slightly larger for readability
+    fontFamily: 'Poppins', // Use a more readable font
+  },
+  modalText: {
+    marginBottom: 20,
+    textAlign: 'center',
+    fontSize: 18,
+    color: '#333', // Neutral color for better readability
+    lineHeight: 24, // Improved spacing for multi-line text
+    fontFamily: 'Poppins',
+  },
+});
