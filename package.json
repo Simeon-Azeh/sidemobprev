@@ -60,6 +60,7 @@
     "react-native-emoji-selector": "^0.2.0",
     "react-native-file-viewer": "^2.1.5",
     "react-native-gesture-handler": "~2.16.1",
+    "react-native-get-random-values": "^1.11.0",
     "react-native-modal": "^13.0.1",
     "react-native-modal-datetime-picker": "^18.0.0",
     "react-native-pager-view": "6.3.0",
@@ -79,7 +80,8 @@
     "react-native-swiper": "^1.6.0",
     "react-native-tab-view": "^3.5.2",
     "react-native-video": "^6.4.3",
-    "react-native-webview": "13.8.6"
+    "react-native-webview": "13.8.6",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"
