@@ -74,12 +74,12 @@
     "react-native-screens": "^3.31.1",
     "react-native-skeleton-placeholder": "^5.2.4",
     "react-native-snap-carousel": "^4.0.0-beta.6",
+    "react-native-svg": "15.2.0",
     "react-native-svg-circular-progress": "^1.0.4",
     "react-native-swiper": "^1.6.0",
     "react-native-tab-view": "^3.5.2",
     "react-native-video": "^6.4.3",
-    "react-native-webview": "13.8.6",
-    "react-native-svg": "15.2.0"
+    "react-native-webview": "13.8.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

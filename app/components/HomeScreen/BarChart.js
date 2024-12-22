@@ -5,6 +5,7 @@ import RNPickerSelect from 'react-native-picker-select';
 import Colors from '../../../assets/Utils/Colors';
 import { auth, firestore } from '../../../firebaseConfig';
 import { collection, doc, onSnapshot } from 'firebase/firestore';
+import BarChartSkeleton from '../BarchartSkeleton';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -15,6 +16,7 @@ const BarChartComponent = () => {
     month: [0, 0, 0, 0],
     sixMonths: [0, 0, 0, 0, 0, 0],
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -51,6 +53,7 @@ const BarChartComponent = () => {
             sixMonths: [0, 0, 0, 0, 0, 0],
           });
         }
+        setLoading(false);
       });
 
       return () => unsubscribe();
@@ -83,28 +86,34 @@ const BarChartComponent = () => {
   return (
     <View style={{ padding: 20 }}>
       <Text style={styles.headerText}>Study Hours</Text>
-      <RNPickerSelect
-        onValueChange={(value) => setSelectedTimePeriod(value)}
-        items={[
-          { label: 'This Week', value: 'week' },
-          { label: 'This Month', value: 'month' },
-          { label: 'Last 6 Months', value: 'sixMonths' },
-        ]}
-        style={pickerStyles}
-        value={selectedTimePeriod} // Set the default value
-      />
-      <BarChart
-        data={{
-          labels: data[selectedTimePeriod].labels,
-          datasets: data[selectedTimePeriod].datasets,
-        }}
-        width={screenWidth - 40}
-        height={240}
-        chartConfig={chartConfig}
-        verticalLabelRotation={30}
-        showValuesOnTopOfBars
-        fromZero
-      />
+      {loading ? (
+        <BarChartSkeleton />
+      ) : (
+        <>
+          <RNPickerSelect
+            onValueChange={(value) => setSelectedTimePeriod(value)}
+            items={[
+              { label: 'This Week', value: 'week' },
+              { label: 'This Month', value: 'month' },
+              { label: 'Last 6 Months', value: 'sixMonths' },
+            ]}
+            style={pickerStyles}
+            value={selectedTimePeriod} // Set the default value
+          />
+          <BarChart
+            data={{
+              labels: data[selectedTimePeriod].labels,
+              datasets: data[selectedTimePeriod].datasets,
+            }}
+            width={screenWidth - 40}
+            height={240}
+            chartConfig={chartConfig}
+            verticalLabelRotation={30}
+            showValuesOnTopOfBars
+            fromZero
+          />
+        </>
+      )}
     </View>
   );
 };

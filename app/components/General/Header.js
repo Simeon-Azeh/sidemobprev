@@ -3,7 +3,7 @@ import { View, TextInput, TouchableOpacity, Image, StyleSheet, Dimensions, Text,
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import Colors from '../../../assets/Utils/Colors';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { auth } from '../../../firebaseConfig';
 import DefaultAvatar from '../../../assets/Images/defaultAvatar.jpg'; // Import a default avatar image
 
@@ -21,6 +21,7 @@ export default function Header() {
   const [placeholderText, setPlaceholderText] = useState(placeholders[0]);
   const [isTyping, setIsTyping] = useState(false);
   const [profileAvatar, setProfileAvatar] = useState(null);
+  const [notificationCount, setNotificationCount] = useState(0);
   const translateY = useRef(new Animated.Value(0)).current; // Start at visible position
   const opacity = useRef(new Animated.Value(1)).current; // Start fully visible
 
@@ -40,6 +41,28 @@ export default function Header() {
     };
 
     fetchProfileAvatar();
+  }, []);
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const db = getFirestore();
+          const q = query(collection(db, 'notifications'), where('userId', '==', user.uid), where('unread', '==', true));
+          const unsubscribe = onSnapshot(q, (snapshot) => {
+            console.log("Snapshot size:", snapshot.size); // Debugging log
+            setNotificationCount(snapshot.size);
+          });
+
+          return () => unsubscribe();
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      }
+    };
+
+    fetchNotifications();
   }, []);
 
   useEffect(() => {
@@ -121,9 +144,11 @@ export default function Header() {
       <View style={styles.iconContainer}>
         <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
           <Icon name="bell" size={30} color={Colors.SECONDARY} />
-          <View style={styles.badgeContainer}>
-            <Text style={styles.badgeText}>2</Text>
-          </View>
+          {notificationCount > 0 && (
+            <View style={styles.badgeContainer}>
+              <Text style={styles.badgeText}>{notificationCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
       <TouchableOpacity style={styles.iconContainer} onPress={() => navigation.navigate('Profile')}>

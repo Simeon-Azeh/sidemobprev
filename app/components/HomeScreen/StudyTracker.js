@@ -7,6 +7,7 @@ import { getFirestore, collection, addDoc, query, where, getDocs, deleteDoc, doc
 import { auth } from '../../../firebaseConfig';
 import BarChartComponent from './BarChart';
 import TaskListComponent from './TaskList';
+import StudyTrackerSkeleton from '../StudyTrackerSkeleton';
 
 const StudyTracker = () => {
   const [isChartView, setIsChartView] = useState(true);
@@ -85,7 +86,9 @@ const StudyTracker = () => {
           onPress={() => setIsChartView(!isChartView)}
         />
       </View>
-      {isChartView ? (
+      {loading ? (
+        <StudyTrackerSkeleton />
+      ) : isChartView ? (
         <BarChartComponent />
       ) : (
         <TaskListComponent

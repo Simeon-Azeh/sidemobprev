@@ -1,35 +1,67 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, Image } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import Colors from '../../../assets/Utils/Colors';
 import NotificationsImg from '../../../assets/Images/NotificationsImg.png';
+import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
+import { auth } from '../../../firebaseConfig';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const notificationsData = [
-    { id: '1', type: 'message-circle', content: 'You have a new comment on your post.', description: 'Click here to view the comment.', unread: true },
-    { id: '2', type: 'message-square', content: 'You received a new message.', description: 'Click here to view the message.', unread: false },
-    { id: '3', type: 'heart', content: 'Someone liked your photo.', description: 'Click here to view who liked your photo.', unread: true },
-    { id: '4', type: 'alert-circle', content: 'New Login Attempt', description: 'Someone tried logging into your account. Do you recognize this person?', unread: false },
-    // Add more notification items as needed
-];
+const defaultNotification = {
+  id: 'default',
+  type: 'info',
+  content: 'Welcome to Sidec!',
+  description: 'We are glad to have you here. Explore and enjoy our services.',
+  unread: true,
+};
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState(notificationsData);
+  const [notifications, setNotifications] = useState([]);
   const [selectedNotifications, setSelectedNotifications] = useState([]);
   const [showOptions, setShowOptions] = useState(null);
 
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const db = getFirestore();
+          const defaultNotificationRef = doc(db, 'notifications', `${user.uid}_default`);
+          const defaultNotificationDoc = await getDoc(defaultNotificationRef);
+
+          if (!defaultNotificationDoc.exists()) {
+            await setDoc(defaultNotificationRef, {
+              ...defaultNotification,
+              userId: user.uid,
+            });
+          }
+
+          const q = query(collection(db, 'notifications'), where('userId', '==', user.uid));
+          const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedNotifications = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+            setNotifications(fetchedNotifications);
+          });
+
+          return () => unsubscribe();
+        }
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+      }
+    };
+
+    fetchNotifications();
+  }, []);
+
   const markAllAsRead = () => {
+    notifications.forEach(async (notification) => {
+      if (notification.unread && notification.id !== 'default') {
+        const db = getFirestore();
+        const notificationRef = doc(db, 'notifications', notification.id);
+        await updateDoc(notificationRef, { unread: false });
+      }
+    });
     setNotifications(notifications.map(notification => ({ ...notification, unread: false })));
-  };
-
-  const deleteNotification = (id) => {
-    setNotifications(notifications.filter(notification => notification.id !== id));
-  };
-
-  const deleteSelectedNotifications = () => {
-    setNotifications(notifications.filter(notification => !selectedNotifications.includes(notification.id)));
-    setSelectedNotifications([]);
   };
 
   const handleOptionsPress = (id) => {
@@ -37,9 +69,18 @@ export default function Notifications() {
   };
 
   const markNotificationAsRead = (id) => {
-    setNotifications(notifications.map(notification =>
-      notification.id === id ? { ...notification, unread: false } : notification
-    ));
+    if (id === 'default') {
+      setNotifications(notifications.map(notification =>
+        notification.id === id ? { ...notification, unread: false } : notification
+      ));
+    } else {
+      const db = getFirestore();
+      const notificationRef = doc(db, 'notifications', id);
+      updateDoc(notificationRef, { unread: false });
+      setNotifications(notifications.map(notification =>
+        notification.id === id ? { ...notification, unread: false } : notification
+      ));
+    }
   };
 
   const handleSelectNotification = (id) => {
@@ -66,7 +107,7 @@ export default function Notifications() {
           <Text style={[styles.notificationText, item.unread && styles.unreadNotification]}>
             {item.content}
           </Text>
-          <Text style={styles.notificationDescription}>
+          <Text style={styles.notificationDescription} numberOfLines={2} ellipsizeMode="tail">
             {item.description}
           </Text>
         </View>
@@ -76,9 +117,6 @@ export default function Notifications() {
       </TouchableOpacity>
       {showOptions === item.id && (
         <View style={styles.optionsContainer}>
-          <TouchableOpacity style={styles.optionButton} onPress={() => deleteNotification(item.id)}>
-            <Text style={styles.optionText}>Delete Comment</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.optionButton} onPress={() => markNotificationAsRead(item.id)}>
             <Text style={styles.optionText}>Mark as Read</Text>
           </TouchableOpacity>
@@ -90,8 +128,8 @@ export default function Notifications() {
   return (
     <View style={styles.container}>
       {selectedNotifications.length > 0 && (
-        <TouchableOpacity style={styles.deleteSelectedButton} onPress={deleteSelectedNotifications}>
-          <Text style={styles.buttonText}>Delete Selected</Text>
+        <TouchableOpacity style={styles.deleteSelectedButton} onPress={() => setSelectedNotifications([])}>
+          <Text style={styles.buttonText}>Deselect All</Text>
         </TouchableOpacity>
       )}
       {unreadNotifications && (

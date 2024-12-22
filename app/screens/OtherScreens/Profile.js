@@ -1,5 +1,5 @@
-import { View, Text, Image, Dimensions, TouchableOpacity } from 'react-native';
-import React from 'react';
+import { View, Text, Image, Dimensions, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
 import Profileavatar from '../../../assets/Images/avatar4.jpg';
 import Colors from '../../../assets/Utils/Colors';
 import awardone from '../../../assets/Images/award_one.jpg';
@@ -8,16 +8,49 @@ import awardthree from '../../../assets/Images/award_three.jpg';
 import awardfour from '../../../assets/Images/award_four.jpg';
 import { FontAwesome } from '@expo/vector-icons'; // FontAwesome
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'; // FontAwesome5
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { auth } from '../../../firebaseConfig';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function Profile() {
+  const [userData, setUserData] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const userDoc = await getDoc(doc(getFirestore(), 'users', user.uid));
+          if (userDoc.exists()) {
+            setUserData(userDoc.data());
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.PRIMARY} />
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flex: 1, alignItems: 'center', paddingVertical: 20, backgroundColor: 'white' }}>
+    <ScrollView contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingVertical: 20, backgroundColor: 'white' }}>
       {/* Avatar and Name */}
       <View>
         <Image 
-          source={Profileavatar} 
+          source={userData.avatar ? { uri: userData.avatar } : Profileavatar} 
           style={{ 
             width: screenWidth * 0.3, 
             height: screenHeight * 0.14, 
@@ -26,7 +59,7 @@ export default function Profile() {
         />
       </View>
       <View>
-      <Text style={{ 
+        <Text style={{ 
           fontSize: screenWidth * 0.03, 
           fontFamily: 'Poppins-Medium', 
           color: Colors.WHITE, 
@@ -41,10 +74,12 @@ export default function Profile() {
         }}>
           Beta User
         </Text>
-        <Text style={{ fontSize: screenWidth * 0.05, fontFamily: 'Poppins-Medium', color: Colors.SECONDARY,}}>
-          Simeon Azeh Kongnyuy
+        <Text style={{ fontSize: screenWidth * 0.05, fontFamily: 'Poppins-Medium', color: Colors.SECONDARY }}>
+          {userData.firstName} {userData.lastName}
         </Text>
-       
+        <Text style={{ fontSize: screenWidth * 0.04, fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, marginTop: 10 }}>
+          {userData.bio ? userData.bio : 'No bio yet'}
+        </Text>
       </View>
 
       {/* Courses Info */}
@@ -60,7 +95,7 @@ export default function Profile() {
             textAlign: 'center', 
             borderRadius: 50 
           }}>
-            04
+            {userData.coursesEnrolled || '0'}
           </Text>
           <Text style={{ fontSize: screenWidth * 0.03, fontFamily: 'Poppins-Medium', color: Colors.SECONDARY }}>
             Courses Enrolled
@@ -77,7 +112,7 @@ export default function Profile() {
             textAlign: 'center', 
             borderRadius: 50 
           }}>
-            02
+            {userData.coursesCompleted || '0'}
           </Text>
           <Text style={{ fontSize: screenWidth * 0.03, fontFamily: 'Poppins-Medium', color: Colors.SECONDARY }}>
             Courses Completed
@@ -114,7 +149,7 @@ export default function Profile() {
           <QuickActionBox icon="eye" text="Change Visibility" />
         </View>
       </View>
-    </View>  
+    </ScrollView>  
   );
 }
 
