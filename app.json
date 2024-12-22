@@ -1,0 +1,37 @@
+{
+  "expo": {
+    "name": "sidecmobileapp",
+    "slug": "sidecedu",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon2.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.kaycoder.sidecmobileapp"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "14871e80-376c-4127-b931-1002d6898e8a"
+      }
+    },
+    "owner": "kaycodernative"
+  }
+}
