@@ -5,7 +5,7 @@ import { getAuth } from 'firebase/auth';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-export default function MessageList({ messages, handleDeleteMessage }) {
+export default function MessageList({ messages, handleDeleteMessage, handleOpenMessage }) {
   const auth = getAuth();
   const currentUser = auth.currentUser || { email: '' };
 
@@ -24,6 +24,7 @@ export default function MessageList({ messages, handleDeleteMessage }) {
         ]}
       >
         <TouchableOpacity
+          onPress={() => !isSentByCurrentUser && handleOpenMessage(item.id)}
           onLongPress={() => handleDeleteMessage(item.id)}
           style={[styles.messageBubble, isSentByCurrentUser ? styles.userMessage : styles.receivedMessage]}
         >

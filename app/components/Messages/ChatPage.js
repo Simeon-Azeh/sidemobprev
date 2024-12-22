@@ -5,7 +5,7 @@ import MessageList from './MessageList';
 import InputSection from './InputSection';
 import EmojiPicker from './EmojiPicker';
 import * as DocumentPicker from 'expo-document-picker';
-import { getFirestore, collection, addDoc, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 
 export default function ChatPage({ route }) {
@@ -50,6 +50,7 @@ export default function ChatPage({ route }) {
         sentByUser: currentUser.email,
         receivedByUser: chat.email,
         timestamp: new Date(),
+        unread: true, // Add unread field
       });
       setMessage('');
     }
@@ -88,10 +89,18 @@ export default function ChatPage({ route }) {
     setShowEmojiPicker(false);
   };
 
+  const handleOpenMessage = async (messageId) => {
+    const db = getFirestore();
+    const messageRef = doc(db, 'chats', chatId, 'messages', messageId);
+    await updateDoc(messageRef, {
+      unread: false,
+    });
+  };
+
   return (
     <View style={styles.container}>
       <ChatHeader chat={chat} realTimestamp={realTimestamp} />
-      <MessageList messages={messages} handleDeleteMessage={handleDeleteMessage} />
+      <MessageList messages={messages} handleDeleteMessage={handleDeleteMessage} handleOpenMessage={handleOpenMessage} />
       <InputSection
         message={message}
         setMessage={setMessage}

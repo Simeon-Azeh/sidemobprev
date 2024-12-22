@@ -3,7 +3,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Colors from '../../../assets/Utils/Colors';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, limit, onSnapshot, where, getDocs, updateDoc, doc } from 'firebase/firestore';
 
 export default function ChatCard({ chat }) {
   const navigation = useNavigation();
@@ -18,7 +18,7 @@ export default function ChatCard({ chat }) {
     const db = getFirestore();
     const messagesRef = collection(db, 'chats', chatId, 'messages');
     const lastMessageQuery = query(messagesRef, orderBy('timestamp', 'desc'), limit(1));
-    const unreadMessagesQuery = query(messagesRef, where('receivedByUser', '==', currentUser.email), where('opened', '==', false));
+    const unreadMessagesQuery = query(messagesRef, where('receivedByUser', '==', currentUser.email), where('unread', '==', true));
 
     const unsubscribeLastMessage = onSnapshot(lastMessageQuery, (querySnapshot) => {
       if (!querySnapshot.empty) {
@@ -42,7 +42,17 @@ export default function ChatCard({ chat }) {
     };
   }, [chatId, currentUser.email]);
 
-  const handlePress = () => {
+  const handlePress = async () => {
+    const db = getFirestore();
+    const messagesRef = collection(db, 'chats', chatId, 'messages');
+    const unreadMessagesQuery = query(messagesRef, where('receivedByUser', '==', currentUser.email), where('unread', '==', true));
+    const querySnapshot = await getDocs(unreadMessagesQuery);
+
+    querySnapshot.forEach(async (docSnapshot) => {
+      const messageRef = doc(db, 'chats', chatId, 'messages', docSnapshot.id);
+      await updateDoc(messageRef, { unread: false });
+    });
+
     navigation.navigate('ChatPage', {
       chat: { ...chat, id: chatId },
       realTimestamp: new Date().toLocaleTimeString([], {
@@ -63,7 +73,7 @@ export default function ChatCard({ chat }) {
         <Text
           style={[
             styles.messagePreview,
-            lastMessage && lastMessage.receivedByUser === currentUser.email && !lastMessage.opened
+            lastMessage && lastMessage.receivedByUser === currentUser.email && lastMessage.unread
               ? styles.unreadMessage
               : null,
           ]}
