@@ -3,7 +3,9 @@ import { View, TextInput, TouchableOpacity, Image, StyleSheet, Dimensions, Text,
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import Colors from '../../../assets/Utils/Colors';
-import ProfileAvatar from '../../../assets/Images/avatar4.jpg';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { auth } from '../../../firebaseConfig';
+import DefaultAvatar from '../../../assets/Images/defaultAvatar.jpg'; // Import a default avatar image
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -18,8 +20,27 @@ export default function Header() {
   const navigation = useNavigation();
   const [placeholderText, setPlaceholderText] = useState(placeholders[0]);
   const [isTyping, setIsTyping] = useState(false);
+  const [profileAvatar, setProfileAvatar] = useState(null);
   const translateY = useRef(new Animated.Value(0)).current; // Start at visible position
   const opacity = useRef(new Animated.Value(1)).current; // Start fully visible
+
+  useEffect(() => {
+    const fetchProfileAvatar = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const userDoc = await getDoc(doc(getFirestore(), 'users', user.uid));
+          if (userDoc.exists()) {
+            setProfileAvatar(userDoc.data().avatar);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching profile avatar:", error);
+      }
+    };
+
+    fetchProfileAvatar();
+  }, []);
 
   useEffect(() => {
     if (!isTyping) {
@@ -107,7 +128,7 @@ export default function Header() {
       </View>
       <TouchableOpacity style={styles.iconContainer} onPress={() => navigation.navigate('Profile')}>
         <Image
-          source={ProfileAvatar}
+          source={profileAvatar ? { uri: profileAvatar } : DefaultAvatar}
           style={styles.profileImage}
         />
       </TouchableOpacity>
@@ -123,6 +144,8 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     backgroundColor: '#fff',
     marginTop: 40,
+    width: '100%', // Ensure header doesn't overflow
+    justifyContent: 'space-between', // Space between header elements
   },
   searchContainer: {
     flexDirection: 'row',
@@ -131,7 +154,7 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     paddingHorizontal: 30,
     marginLeft: 15,
-    width: screenWidth * 0.6,
+    width: screenWidth * 0.55,
     height: 40,
     position: 'relative',
     overflow: 'hidden', // Hide overflow
@@ -163,8 +186,8 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginLeft: 15,
-    width: screenWidth * 0.1, // Use a percentage of screen width for responsiveness
-    height: screenWidth * 0.1, // Maintain a square aspect ratio
+    width: screenWidth * 0.11, // Smaller width to avoid overflow
+    height: screenWidth * 0.11, // Maintain square aspect ratio
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative', // Needed for badge positioning
