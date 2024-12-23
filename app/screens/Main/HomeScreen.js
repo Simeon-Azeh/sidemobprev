@@ -265,6 +265,8 @@ export default function HomeScreen() {
               width: '40%',
               alignSelf: 'center',
               backgroundColor: Colors.WHITE,
+              flexDirection: 'row',
+              
             }}
             onPress={() => navigation.navigate('Courses')}
           >

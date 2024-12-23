@@ -1,48 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, Dimensions } from 'react-native';
 import Carousel from 'react-native-snap-carousel';
-import { MaterialIcons } from '@expo/vector-icons'; // Import MaterialIcons or any other icon set you prefer
+import { MaterialIcons } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-const data = [
-  {
-    title: 'React Native for Beginners',
-    level: 'Advanced',
-    image: 'https://img.freepik.com/free-vector/background-abstract-pixel-rain_23-2148371445.jpg?t=st=1723064746~exp=1723068346~hmac=df13cd47dd1ce96ead73617380abffe705eda61371f6f28987f2d25984296a51&w=740',
-    timeToComplete: '10 hours',
-    ratings: 4.5,
-    reviews: 120,
-  },
-  {
-    title: 'Computer Science',
-    level: 'Olevel',
-    image: 'https://img.freepik.com/free-vector/gradient-top-view-laptop-background_52683-6291.jpg?t=st=1723065545~exp=1723069145~hmac=961c9dd607942a47415ea68a2f399920924699baf5f127abf2fe969091fcf2cc&w=740',
-    timeToComplete: '20 hours',
-    ratings: 4.7,
-    reviews: 98,
-  },
-  {
-    title: 'Flutter for Beginners',
-    level: 'Alevel',
-    image: 'https://img.freepik.com/free-photo/representations-user-experience-interface-design_23-2150104485.jpg?t=st=1723065936~exp=1723069536~hmac=3efbbbdecb111701557d4631157f58a39ff330892ed93f069213c6701b3df930&w=740',
-    timeToComplete: '15 hours',
-    ratings: 4.3,
-    reviews: 75,
-  },
-  {
-    title: 'Data Structures',
-    level: 'Freelance',
-    image: 'https://img.freepik.com/free-vector/abstract-modern-big-data-background_23-2147909569.jpg?t=st=1723065989~exp=1723069589~hmac=692192eb5c28dc30dc0905f9b2f8a1e1b29e0c876b80251f39d87e6ef3b7f299&w=740',
-    timeToComplete: '8 hours',
-    ratings: 4.9,
-    reviews: 200,
-  },
-];
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { auth } from '../../../firebaseConfig';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const sliderWidth = screenWidth;
-const itemWidth = screenWidth * 0.6; // Adjust item width to make the next item partly visible
+const itemWidth = screenWidth * 0.6;
 
 const renderItem = ({ item }) => {
   return (
@@ -53,7 +21,7 @@ const renderItem = ({ item }) => {
       padding: 10,
       width: itemWidth,
       height: screenWidth * 0.7,
-      marginHorizontal: screenWidth * -0.16, // Spacing between items
+      marginHorizontal: screenWidth * -0.16,
     }}>
       <Image
         source={{ uri: item.image }}
@@ -64,17 +32,15 @@ const renderItem = ({ item }) => {
         }}
       />
       <View style={{ padding: 10 }}>
-    
         <Text style={{ fontSize: screenWidth * 0.035, fontFamily: 'Poppins-Medium', color: Colors.SECONDARY }}>{item.title}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
           <MaterialIcons name="school" size={20} color="#9835ff" />
           <Text style={{ marginLeft: 5, fontSize: 14, color: '#9835ff', fontFamily: 'Poppins-Medium' }}>{item.level}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-        <MaterialCommunityIcons name="timelapse" size={18} color="#a9a9a9" />
-        <Text style={{ fontSize: 14, color: '#a9a9a9', marginLeft: 2, fontFamily: 'Poppins-Medium' }}> {item.timeToComplete}</Text>
+          <MaterialCommunityIcons name="timelapse" size={18} color="#a9a9a9" />
+          <Text style={{ fontSize: 14, color: '#a9a9a9', marginLeft: 2, fontFamily: 'Poppins-Medium' }}> {item.timeToComplete}</Text>
         </View>
-      
         <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
           <MaterialIcons name="star" size={20} color="#f1c40f" />
           <Text style={{ marginLeft: 5, fontSize: 14, color: '#a9a9a9', fontFamily: 'Poppins' }}>{item.ratings} ({item.reviews} reviews)</Text>
@@ -85,16 +51,70 @@ const renderItem = ({ item }) => {
 };
 
 const RecommendedCoursesCarousel = () => {
+  const [recommendedCourses, setRecommendedCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRecommendedCourses = async () => {
+      try {
+        const user = auth.currentUser;
+        if (user) {
+          const db = getFirestore();
+          const savedCoursesRef = collection(db, 'SavedCourses');
+          const enrolledCoursesRef = collection(db, 'Enrollments');
+
+          const savedCoursesQuery = query(savedCoursesRef, where('userId', '==', user.uid));
+          const enrolledCoursesQuery = query(enrolledCoursesRef, where('userId', '==', user.uid));
+
+          const savedCoursesSnapshot = await getDocs(savedCoursesQuery);
+          const enrolledCoursesSnapshot = await getDocs(enrolledCoursesQuery);
+
+          const categories = new Set();
+
+          savedCoursesSnapshot.forEach(doc => {
+            categories.add(doc.data().category);
+          });
+
+          enrolledCoursesSnapshot.forEach(doc => {
+            categories.add(doc.data().category);
+          });
+
+          const allCoursesRef = collection(db, 'courses');
+          const allCoursesSnapshot = await getDocs(allCoursesRef);
+          const allCourses = allCoursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+          const filteredCourses = allCourses.filter(course => categories.has(course.category));
+          const shuffledCourses = filteredCourses.sort(() => 0.5 - Math.random());
+          const selectedCourses = shuffledCourses.slice(0, 4);
+
+          setRecommendedCourses(selectedCourses);
+        }
+      } catch (error) {
+        console.error("Error fetching recommended courses:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRecommendedCourses();
+  }, []);
+
   return (
-    <Carousel
-      data={data}
-      renderItem={renderItem}
-      sliderWidth={sliderWidth}
-      itemWidth={itemWidth}
-      inactiveSlideScale={0.9} // Adjust scaling of inactive slides
-      inactiveSlideOpacity={0.7} // Adjust opacity of inactive slides
-      contentContainerCustomStyle={{ overflow: 'visible' }} // Ensure content overflows to show next item partly
-    />
+    <View>
+      {loading ? (
+        <Text>Loading...</Text>
+      ) : (
+        <Carousel
+          data={recommendedCourses}
+          renderItem={renderItem}
+          sliderWidth={sliderWidth}
+          itemWidth={itemWidth}
+          inactiveSlideScale={0.9}
+          inactiveSlideOpacity={0.7}
+          contentContainerCustomStyle={{ overflow: 'visible' }}
+        />
+      )}
+    </View>
   );
 };
 

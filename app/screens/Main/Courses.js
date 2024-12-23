@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView } from 'react-native';
+import { View, ScrollView, ActivityIndicator } from 'react-native';
 import Header from '../../components/General/Header';
 import CategoryCoursesCarousel from '../../components/Courses/CourseCategoryCarousel';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
@@ -23,9 +23,11 @@ const CoursesScreen = () => {
     arts: [],
     tech: [],
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchCourses = async () => {
+      setLoading(true);
       const db = getFirestore();
       const coursesRef = collection(db, 'courses');
       const coursesSnapshot = await getDocs(coursesRef);
@@ -46,6 +48,7 @@ const CoursesScreen = () => {
       });
 
       setCourses(categorizedCourses);
+      setLoading(false);
     };
 
     fetchCourses();
@@ -53,20 +56,26 @@ const CoursesScreen = () => {
 
   const AllTab = () => (
     <ScrollView>
-      <CategoryCoursesCarousel title="All Courses" courses={courses.all} />
+      {loading ? <ActivityIndicator size="large" color={Colors.PRIMARY} /> : <CategoryCoursesCarousel title="All Courses" courses={courses.all} />}
     </ScrollView>
   );
 
   const ScienceTab = () => (
-    <CategoryCoursesCarousel title="Science" courses={courses.science} />
+    <ScrollView>
+      {loading ? <ActivityIndicator size="large" color={Colors.PRIMARY} /> : <CategoryCoursesCarousel title="Science" courses={courses.science} />}
+    </ScrollView>
   );
 
   const ArtsTab = () => (
-    <CategoryCoursesCarousel title="Arts" courses={courses.arts} />
+    <ScrollView>
+      {loading ? <ActivityIndicator size="large" color={Colors.PRIMARY} /> : <CategoryCoursesCarousel title="Arts" courses={courses.arts} />}
+    </ScrollView>
   );
 
   const TechTab = () => (
-    <CategoryCoursesCarousel title="Tech" courses={courses.tech} />
+    <ScrollView>
+      {loading ? <ActivityIndicator size="large" color={Colors.PRIMARY} /> : <CategoryCoursesCarousel title="Tech" courses={courses.tech} />}
+    </ScrollView>
   );
 
   const renderScene = SceneMap({

@@ -22,7 +22,7 @@ export default function StatsCard() {
           const db = getFirestore();
 
           // Fetch saved courses count
-          const savedCoursesQuery = query(collection(db, 'savedCourses'), where('email', '==', user.email));
+          const savedCoursesQuery = query(collection(db, 'SavedCourses'), where('userId', '==', user.uid));
           const savedCoursesSnapshot = await getDocs(savedCoursesQuery);
           setSavedCoursesCount(savedCoursesSnapshot.size);
 

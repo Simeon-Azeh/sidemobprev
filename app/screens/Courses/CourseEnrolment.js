@@ -187,8 +187,9 @@ const CourseEnrolment = ({ route, navigation }) => {
   if (!course) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Loading...</Text>
-      </View>
+      <ActivityIndicator size="large" color={Colors.PRIMARY} />
+      <Text style={styles.loadingText}>Loading...</Text>
+    </View>
     );
   }
 
@@ -354,6 +355,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: Colors.SECONDARY,
+    fontFamily: 'Poppins-Medium',
   },
   backgroundImage: {
     width: screenWidth * 1,
