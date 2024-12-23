@@ -13,13 +13,13 @@ const CategoryCoursesCarousel = ({ title, courses }) => {
   const sliderWidth = screenWidth;
   const itemWidth = screenWidth * 0.6;
 
-  const handlePress = (course) => {
-    navigation.navigate('CourseEnrolment', { course });
+  const handlePress = (courseId) => {
+    navigation.navigate('CourseEnrolment', { courseId });
   };
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
-      onPress={() => handlePress(item)}
+      onPress={() => handlePress(item.id)}
       style={{
         backgroundColor: '#fff',
         borderRadius: 8,

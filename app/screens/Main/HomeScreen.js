@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Dimensions, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import Carousel from 'react-native-snap-carousel';
-import { MaterialIcons } from '@expo/vector-icons'; // Import MaterialIcons or any other icon set you prefer
-import * as Progress from 'react-native-progress'; // Import the progress circle component
-import SkeletonPlaceholder from 'react-native-skeleton-placeholder'; // Skeleton Loader
+import { MaterialIcons } from '@expo/vector-icons';
+import * as Progress from 'react-native-progress';
 import Header from '../../components/General/Header';
 import GreetingCard from '../../components/General/GreetingCard';
 import Colors from '../../../assets/Utils/Colors';
 import StatsCard from '../../components/HomeScreen/StatsCard';
 import StudyTracker from '../../components/HomeScreen/StudyTracker';
-
 import RecommendedCoursesCarousel from '../../components/HomeScreen/RecommendedCoursesCarousel';
 import Feather from '@expo/vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
@@ -25,18 +23,25 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
 
   const sliderWidth = screenWidth;
-  const itemWidth = screenWidth * 0.8; // Adjust item width as needed
+  const itemWidth = screenWidth * 0.8;
 
   useEffect(() => {
     const fetchEnrolledCourses = async () => {
       try {
         const user = auth.currentUser;
         if (user) {
-          const q = query(collection(getFirestore(), 'enrolledCourses'), where('email', '==', user.email));
+          const q = query(collection(getFirestore(), 'Enrollments'), where('userEmail', '==', user.email));
           const querySnapshot = await getDocs(q);
           const courses = [];
           querySnapshot.forEach((doc) => {
-            courses.push(doc.data());
+            const data = doc.data();
+            courses.push({
+              id: doc.id,
+              title: data.courseTitle,
+              image: data.courseImage,
+              category: data.category || 'Unknown',
+              progress: data.progress || 0,
+            });
           });
           setEnrolledCourses(courses);
         }
@@ -60,7 +65,7 @@ export default function HomeScreen() {
         padding: 10,
         width: itemWidth,
         height: 120,
-        marginHorizontal: screenWidth * -0.06, // Spacing between items
+        marginHorizontal: screenWidth * -0.06,
         paddingHorizontal: 20,
         marginBottom: 20,
       }}>

@@ -1,46 +1,200 @@
-import React, { useState } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, TextInput, FlatList, Dimensions } from 'react-native';
-import { MaterialIcons, MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, ActivityIndicator } from 'react-native';
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
-import { useNavigation } from '@react-navigation/native';
+import { getFirestore, doc, getDoc, collection, addDoc, getDocs, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-const CourseEnrolment = ({ navigation }) => {
+const CourseEnrolment = ({ route, navigation }) => {
+  const { courseId } = route.params;
+  const [course, setCourse] = useState(null);
+  const [reviews, setReviews] = useState([]);
+  const [newReview, setNewReview] = useState('');
   const [showMore, setShowMore] = useState(false);
   const [expandedTopicIndex, setExpandedTopicIndex] = useState(null);
+  const [loadingReview, setLoadingReview] = useState(false);
+  const [loadingEnroll, setLoadingEnroll] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [enrolled, setEnrolled] = useState(false);
+  const [visibleReviews, setVisibleReviews] = useState(4);
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
 
+  useEffect(() => {
+    const fetchCourse = async () => {
+      const db = getFirestore();
+      const courseRef = doc(db, 'courses', courseId);
+      const courseDoc = await getDoc(courseRef);
 
-  const course = {
-    title: 'Introduction to React Native',
-    author: 'Jane Doe',
-    category: 'Tech',
-    publishDate: 'Jan 15, 2024',
-    enrollments: '2500',
-    tcomplete: '7 hours',
-    Lessons: '20',
-    description: 'This course provides an introduction to React Native. You will learn about components, state management, and how to build cross-platform mobile applications. It covers various topics including navigation, UI design, and data handling. You will also get hands-on experience by building a sample app.',
-    objectives: ['Understand React Native basics', 'Build mobile apps', 'Manage state effectively'],
-    material: [
-      { title: 'Introduction', subtopics: ['Overview', 'Setup'], locked: true },
-      { title: 'Components', subtopics: ['Function Components', 'Class Components'], locked: false },
-    ],
-    reviews: [
-      { id: '1', user: 'John Doe', comment: 'Great course!', likes: 10, replies: 2, avatar: 'https://via.placeholder.com/40' },
-      { id: '2', user: 'Alice Smith', comment: 'Very informative.', likes: 5, replies: 1, avatar: 'https://via.placeholder.com/40' }
-    ],
-    price: 'Free',
-  };
+      if (courseDoc.exists()) {
+        setCourse(courseDoc.data());
+      } else {
+        console.log('No such document!');
+      }
+    };
+
+    const fetchReviews = async () => {
+      const db = getFirestore();
+      const reviewsRef = collection(db, 'reviews');
+      const reviewsSnapshot = await getDocs(reviewsRef);
+      const reviewsList = reviewsSnapshot.docs
+        .filter(doc => doc.data().courseId === courseId)
+        .map(doc => ({ id: doc.id, ...doc.data() }));
+      setReviews(reviewsList);
+    };
+
+    const checkIfSaved = async () => {
+      const db = getFirestore();
+      const savedCoursesRef = collection(db, 'SavedCourses');
+      const q = query(savedCoursesRef, where('userId', '==', currentUser.uid), where('courseId', '==', courseId));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        setSaved(true);
+      }
+    };
+
+    const checkIfEnrolled = async () => {
+      const db = getFirestore();
+      const enrollmentsRef = collection(db, 'Enrollments');
+      const q = query(enrollmentsRef, where('userId', '==', currentUser.uid), where('courseId', '==', courseId));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        setEnrolled(true);
+      }
+    };
+
+    fetchCourse();
+    fetchReviews();
+    checkIfSaved();
+    checkIfEnrolled();
+  }, [courseId]);
 
   const toggleTopic = (index) => {
     setExpandedTopicIndex(expandedTopicIndex === index ? null : index);
   };
 
-  
+  const handleAddReview = async () => {
+    if (!newReview.trim()) return;
+
+    setLoadingReview(true);
+
+    const db = getFirestore();
+    const userRef = doc(db, 'users', currentUser.uid);
+    const userDoc = await getDoc(userRef);
+    const avatar = userDoc.exists() ? userDoc.data().avatar : 'https://via.placeholder.com/40';
+
+    const reviewData = {
+      courseId,
+      user: currentUser.email,
+      comment: newReview,
+      likes: [],
+      replies: [],
+      avatar,
+    };
+
+    try {
+      await addDoc(collection(db, 'reviews'), reviewData);
+      setReviews([...reviews, reviewData]);
+      setNewReview('');
+    } catch (error) {
+      console.error('Error adding review:', error);
+    } finally {
+      setLoadingReview(false);
+    }
+  };
+
+  const handleLikeReview = async (reviewId) => {
+    const db = getFirestore();
+    const reviewRef = doc(db, 'reviews', reviewId);
+
+    try {
+      await updateDoc(reviewRef, {
+        likes: arrayUnion(currentUser.email),
+      });
+      setReviews(reviews.map(review => review.id === reviewId ? { ...review, likes: [...review.likes, currentUser.email] } : review));
+    } catch (error) {
+      console.error('Error liking review:', error);
+    }
+  };
+
+  const handleSaveCourse = async () => {
+    const db = getFirestore();
+    const savedCoursesRef = collection(db, 'SavedCourses');
+    const q = query(savedCoursesRef, where('userId', '==', currentUser.uid), where('courseId', '==', courseId));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      // If already saved, delete the saved course
+      const docId = querySnapshot.docs[0].id;
+      await deleteDoc(doc(db, 'SavedCourses', docId));
+      setSaved(false);
+    } else {
+      // Save the course
+      const savedCourseData = {
+        userId: currentUser.uid,
+        courseId,
+        courseTitle: course.title,
+        courseImage: course.image,
+      };
+
+      try {
+        await addDoc(savedCoursesRef, savedCourseData);
+        setSaved(true);
+        console.log('Course saved successfully');
+      } catch (error) {
+        console.error('Error saving course:', error);
+      }
+    }
+  };
+
+  const handleEnroll = async () => {
+    if (enrolled) return;
+
+    setLoadingEnroll(true);
+
+    const db = getFirestore();
+    const enrollmentData = {
+      userId: currentUser.uid,
+      courseId,
+      courseTitle: course.title,
+      courseImage: course.image,
+      userEmail: currentUser.email,
+    };
+
+    try {
+      await addDoc(collection(db, 'Enrollments'), enrollmentData);
+      console.log('Enrolled successfully');
+      setEnrolled(true);
+
+      // Update enrollment count
+      const enrollmentsRef = collection(db, 'Enrollments');
+      const enrollmentsSnapshot = await getDocs(enrollmentsRef);
+      const enrollmentCount = enrollmentsSnapshot.docs.filter(doc => doc.data().courseId === courseId).length;
+      setCourse(prevCourse => ({ ...prevCourse, enrollments: enrollmentCount }));
+    } catch (error) {
+      console.error('Error enrolling:', error);
+    } finally {
+      setLoadingEnroll(false);
+    }
+  };
+
+  const handleShowMoreReviews = () => {
+    setVisibleReviews(prevVisibleReviews => prevVisibleReviews + 4);
+  };
+
+  if (!course) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Image source={{ uri: 'https://via.placeholder.com/400' }} style={styles.backgroundImage} />
+      <Image source={{ uri: course.image }} style={styles.backgroundImage} />
       
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} >
         <MaterialIcons name="chevron-left" size={40} color={Colors.SECONDARY} />
@@ -50,33 +204,32 @@ const CourseEnrolment = ({ navigation }) => {
         <View style={styles.courseHeader}>
           <Text style={styles.courseTitle}>{course.title}</Text>
           <View style={styles.headerActions}>
-            <MaterialCommunityIcons name="bookmark-outline" size={30} color={Colors.SECONDARY} />
+            <TouchableOpacity onPress={handleSaveCourse}>
+              <MaterialCommunityIcons name={saved ? "bookmark" : "bookmark-outline"} size={30} color={saved ? Colors.PRIMARY : Colors.SECONDARY} />
+            </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.courseInfo}>
-          <Image source={{ uri: 'https://via.placeholder.com/40' }} style={styles.authorImage} />
+          <Image source={{ uri: course.avatar }} style={styles.authorImage} />
           <Text style={styles.authorName}>{course.author}</Text>
           <Text style={styles.courseCategory}>{course.category}</Text>
         </View>
 
         <View style={styles.infoBoxes}>
-            
           <View style={styles.infoBox}>
-          <MaterialIcons name="calendar-today" size={30} color="#9835ff" style={{ marginRight: 10}}/>
-          <View>
-          <Text style={{fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, fontSize: screenWidth * 0.035}}>Published</Text>
-          <Text style={styles.infoText}>{course.publishDate}</Text>
-          </View>
-           
-          </View>
-          <View style={styles.infoBox}>
-          <MaterialIcons name="people" size={30} color="#9835ff" style={{ marginRight: 10}} />
+            <MaterialIcons name="calendar-today" size={30} color="#9835ff" style={{ marginRight: 10 }} />
             <View>
-            <Text style={{fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, fontSize: screenWidth * 0.035}}>Enrolled</Text>
-            <Text style={styles.infoText}>{course.enrollments} People</Text>
+              <Text style={{ fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, fontSize: screenWidth * 0.035 }}>Published</Text>
+              <Text style={styles.infoText}>{course.dateOfPublication}</Text>
             </View>
-          
+          </View>
+          <View style={styles.infoBox}>
+            <MaterialIcons name="people" size={30} color="#9835ff" style={{ marginRight: 10 }} />
+            <View>
+              <Text style={{ fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, fontSize: screenWidth * 0.035 }}>Enrolled</Text>
+              <Text style={styles.infoText}>{course.enrollments || 0} People</Text>
+            </View>
           </View>
         </View>
 
@@ -92,7 +245,7 @@ const CourseEnrolment = ({ navigation }) => {
 
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Learning Objectives</Text>
-          {course.objectives.map((objective, index) => (
+          {course.learningObjectives && course.learningObjectives.map((objective, index) => (
             <View key={index} style={styles.objectiveContainer}>
               <MaterialCommunityIcons name="check-circle" size={20} color={Colors.PRIMARY} />
               <Text style={styles.objectiveText}>{objective}</Text>
@@ -101,41 +254,34 @@ const CourseEnrolment = ({ navigation }) => {
         </View>
 
         <View style={styles.infoBoxes}>
-            
-            <View style={styles.infoBox}>
-            <MaterialIcons name="lock-clock" size={30} color="#9835ff" style={{ marginRight: 10}}/>
+          <View style={styles.infoBox}>
+            <MaterialIcons name="lock-clock" size={30} color="#9835ff" style={{ marginRight: 10 }} />
             <View>
-            <Text style={{fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, fontSize: screenWidth * 0.035}}>Time to Complete</Text>
-            <Text style={styles.infoText}>{course.tcomplete}</Text>
-            </View>
-             
-            </View>
-            <View style={styles.infoBox}>
-            <MaterialIcons name="people" size={30} color="#9835ff" style={{ marginRight: 10}} />
-              <View>
-              <Text style={{fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, fontSize: screenWidth * 0.035}}>Lessons</Text>
-              <Text style={styles.infoText}>{course.Lessons} Lessons</Text>
-              </View>
-            
+              <Text style={{ fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, fontSize: screenWidth * 0.035 }}>Time to Complete</Text>
+              <Text style={styles.infoText}>{course.timeToComplete}</Text>
             </View>
           </View>
-  
+          <View style={styles.infoBox}>
+            <MaterialIcons name="people" size={30} color="#9835ff" style={{ marginRight: 10 }} />
+            <View>
+              <Text style={{ fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, fontSize: screenWidth * 0.035 }}>Lessons</Text>
+              <Text style={styles.infoText}>{course.totalLessons} Lessons</Text>
+            </View>
+          </View>
+        </View>
 
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Course Material</Text>
-          {course.material.map((item, index) => (
+          {course.courseMaterials && course.courseMaterials.map((item, index) => (
             <View key={index} style={styles.materialContainer}>
               <TouchableOpacity onPress={() => toggleTopic(index)}>
                 <Text style={styles.materialTitle}>
                   {item.title}
-                
                   <MaterialIcons name="keyboard-arrow-down" size={20} color="#333" style={styles.dropdownIcon} />
                 </Text>
-           
               </TouchableOpacity>
-              {expandedTopicIndex === index && item.subtopics.map((subtopic, subIndex) => (
+              {expandedTopicIndex === index && item.subMaterials && item.subMaterials.map((subtopic, subIndex) => (
                 <View key={subIndex} style={styles.subtopicContainer}>
-               
                   <Text style={styles.subtopicText}>
                     <MaterialCommunityIcons name="lock" size={16} color="#888" /> {subtopic}
                   </Text>
@@ -147,55 +293,67 @@ const CourseEnrolment = ({ navigation }) => {
 
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Reviews</Text>
-          {course.reviews.map((review, index) => (
+          {reviews.slice(0, visibleReviews).map((review, index) => (
             <View key={index} style={styles.reviewContainer}>
               <Image source={{ uri: review.avatar }} style={styles.reviewAvatar} />
               <View style={styles.reviewContent}>
                 <Text style={styles.reviewUser}>{review.user}</Text>
                 <Text style={styles.reviewComment}>{review.comment}</Text>
                 <View style={styles.reviewActions}>
-                  <TouchableOpacity style={styles.reviewActionButton}>
+                  <TouchableOpacity style={styles.reviewActionButton} onPress={() => handleLikeReview(review.id)}>
                     <MaterialCommunityIcons name="thumb-up-outline" size={20} color={Colors.SECONDARY} />
-                    <Text style={styles.reviewActionText}>{review.likes}</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.reviewActionButton}>
-                    <MaterialCommunityIcons name="comment-outline" size={20} color={Colors.SECONDARY} />
-                    <Text style={styles.reviewActionText}>{review.replies}</Text>
-                    <Text style={styles.showRepliesButton}>Show Replies</Text>
+                    <Text style={styles.reviewActionText}>{review.likes.length}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
           ))}
+          {visibleReviews < reviews.length && (
+            <TouchableOpacity onPress={handleShowMoreReviews}>
+              <Text style={styles.readMore}>Show More</Text>
+            </TouchableOpacity>
+          )}
           <View style={styles.addReviewContainer}>
-            <TextInput style={styles.addReviewInput} placeholder="Add your review..." multiline />
-            <TouchableOpacity style={styles.addReviewButton}>
-              <Text style={styles.addReviewButtonText}>Submit Review</Text>
+            <TextInput
+              style={styles.addReviewInput}
+              placeholder="Add your review..."
+              multiline
+              value={newReview}
+              onChangeText={setNewReview}
+            />
+            <TouchableOpacity style={styles.addReviewButton} onPress={handleAddReview} disabled={loadingReview}>
+              {loadingReview ? <ActivityIndicator color="#fff" /> : <Text style={styles.addReviewButtonText}>Submit Review</Text>}
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
-          <View>
-          <Text style={{fontFamily: 'Poppins-Medium', color: Colors.SECONDARY}}>Price: </Text>
+        <View>
+          <Text style={{ fontFamily: 'Poppins-Medium', color: Colors.SECONDARY }}>Price: </Text>
           <Text style={styles.price}>{course.price}</Text>
-          </View>
-          <TouchableOpacity 
-  style={styles.enrollButton} 
-  onPress={() => navigation.navigate('CourseMaterial')}
->
-  <Text style={styles.enrollButtonText}>Enroll</Text>
-</TouchableOpacity>
-
+        </View>
+        <TouchableOpacity 
+          style={styles.enrollButton} 
+          onPress={handleEnroll}
+          disabled={loadingEnroll || enrolled}
+        >
+          {loadingEnroll ? <ActivityIndicator color="#fff" /> : <Text style={styles.enrollButtonText}>{enrolled ? 'Enrolled' : 'Enroll'}</Text>}
+        </TouchableOpacity>
       </View>
     </View>
   );
 };
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   backgroundImage: {
     width: screenWidth * 1,
@@ -218,7 +376,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
     backgroundColor: '#fff',
     borderRadius: 20,
-
   },
   courseHeader: {
     flexDirection: 'row',
@@ -228,8 +385,9 @@ const styles = StyleSheet.create({
   },
   courseTitle: {
     fontSize: screenWidth * 0.045,
-    fontFamily: 'Poppins-Medium',
+    fontFamily: 'Poppins-SemiBold',
     color: Colors.SECONDARY,
+    marginBottom: 10,
   },
   headerActions: {
     flexDirection: 'row',
@@ -239,8 +397,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-  marginTop: screenHeight * -0.02,
-  marginBottom: screenHeight * 0.02,
+    marginTop: screenHeight * -0.02,
+    marginBottom: screenHeight * 0.02,
   },
   authorImage: {
     width: screenWidth * 0.08,
@@ -249,7 +407,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   authorName: {
-    fontSize: screenWidth * 0.035,
+    fontSize: screenWidth * 0.045,
     fontFamily: 'Poppins-Medium',
     color: Colors.SECONDARY,
   },
@@ -274,7 +432,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: screenHeight * 0.02,
     marginBottom: screenHeight * 0.02,
-    
+    alignItems: 'center',
+    gap: 10,
   },
   infoBox: {
     flexDirection: 'row',
@@ -294,8 +453,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: screenWidth * 0.03,
-   
-    fontFamily: 'Poppins',
+    fontFamily: 'Poppins-Medium',
     color: '#888',
   },
   descriptionContainer: {
@@ -304,16 +462,16 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: screenWidth * 0.04,
-    fontFamily: 'Poppins-Medium',
+    fontFamily: 'Poppins-SemiBold',
     marginBottom: 10,
     color: Colors.PRIMARY,
   },
   description: {
     fontSize: screenWidth * 0.03,
-    color: '#555',
+    color: '#777',
     lineHeight: 20,
     textAlign: 'justify',
-    fontFamily: 'Poppins',
+    fontFamily: 'Poppins-Medium',
   },
   readMore: {
     fontSize: screenWidth * 0.03,
@@ -335,7 +493,7 @@ const styles = StyleSheet.create({
     color: '#555',
     lineHeight: 20,
     textAlign: 'justify',
-    fontFamily: 'Poppins',
+    fontFamily: 'Poppins-Medium',
     marginLeft: 10,
   },
   materialContainer: {
@@ -343,33 +501,33 @@ const styles = StyleSheet.create({
   },
   materialTitle: {
     fontSize: screenWidth * 0.035,
-    fontFamily: 'Poppins-Medium',
+    fontFamily: 'Poppins-SemiBold',
     marginBottom: 5,
     color: Colors.SECONDARY,
-
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
- 
-  
   subtopicContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 5,
   },
   dropdownIcon: {
-   
     color: Colors.PRIMARY,
     fontSize: 20,
     marginTop: 10,
+    marginLeft: 10,
+    marginRight: 10,
+    transform: [{ rotate: '90deg' }],
+
   },
   subtopicText: {
     fontSize: screenWidth * 0.035,
     color: '#333',
     lineHeight: 20,
     textAlign: 'justify',
-    fontFamily: 'Poppins',
+    fontFamily: 'Poppins-Medium',
   },
   reviewContainer: {
     flexDirection: 'row',
@@ -383,12 +541,10 @@ const styles = StyleSheet.create({
     shadowOffset: {
       width: 0,
       height: 2,
-    
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 0.05,
-    
   },
   reviewAvatar: {
     width: screenWidth * 0.08,
@@ -435,7 +591,6 @@ const styles = StyleSheet.create({
   },
   addReviewContainer: {
     marginTop: 20,
-    
   },
   addReviewInput: {
     borderColor: '#ddd',
@@ -445,9 +600,8 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     height: screenHeight * 0.1,
     textAlignVertical: 'top',
-    fontFamily: 'Poppins',
+    fontFamily: 'Poppins-Medium',
     fontSize: screenWidth * 0.035,
-
     backgroundColor: '#fff',
   },
   addReviewButton: {
@@ -473,7 +627,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#ddd',
-    
   },
   price: {
     fontSize: 18,
@@ -492,7 +645,6 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins-Medium',
     textAlign: 'center',
-    
   },
 });
 
