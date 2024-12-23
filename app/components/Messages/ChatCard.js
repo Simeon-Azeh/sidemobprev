@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Colors from '../../../assets/Utils/Colors';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, query, orderBy, limit, onSnapshot, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function ChatCard({ chat }) {
   const navigation = useNavigation();
@@ -23,6 +27,7 @@ export default function ChatCard({ chat }) {
     const unsubscribeLastMessage = onSnapshot(lastMessageQuery, (querySnapshot) => {
       if (!querySnapshot.empty) {
         const message = querySnapshot.docs[0].data();
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setLastMessage({
           ...message,
           timestamp: message.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -33,6 +38,7 @@ export default function ChatCard({ chat }) {
     });
 
     const unsubscribeUnreadMessages = onSnapshot(unreadMessagesQuery, (querySnapshot) => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setUnreadCount(querySnapshot.size);
     });
 
@@ -96,23 +102,23 @@ const styles = StyleSheet.create({
   cardContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
+    padding: 10, // Reduced padding to decrease gap between messages
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
     backgroundColor: '#fff',
-    marginVertical: 5,
+    marginVertical: 3, // Reduced margin to decrease gap between messages
     borderRadius: 10,
-    shadowColor: '#000',
+    shadowColor: '#ccc',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.07,
+    shadowRadius: 5,
+    elevation: 5,
   },
   profileImage: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    marginRight: 15,
+    marginRight: 10, // Reduced margin to decrease gap between image and text
   },
   textContainer: {
     flex: 1,
@@ -135,7 +141,7 @@ const styles = StyleSheet.create({
   messagePreview: {
     fontSize: 14,
     color: '#888',
-    marginTop: 5,
+    marginTop: 3, // Reduced margin to decrease gap between name and message preview
     fontFamily: 'Poppins',
   },
   unreadMessage: {

@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, FlatList, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, SectionList, StyleSheet, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import Colors from '../../../assets/Utils/Colors';
 import { getAuth } from 'firebase/auth';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -9,12 +10,49 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
   const auth = getAuth();
   const currentUser = auth.currentUser || { email: '' };
 
+  const formatDate = (timestamp) => {
+    const datePart = timestamp.split(' at ')[0];
+    const date = new Date(datePart);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+  };
+
+  const groupedMessages = messages.reduce((acc, message) => {
+    const date = formatDate(message.timestamp);
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(message);
+    return acc;
+  }, {});
+
   const renderMessage = ({ item }) => {
     const isSentByCurrentUser = item.sentByUser === currentUser.email;
     const messageText = item.text || 'Message not available';
 
-    // Debugging logs
-    console.log('Rendering message:', item.text, 'Sent by:', item.sentByUser, 'Is current user:', isSentByCurrentUser);
+    const renderCheckMarks = () => {
+      if (isSentByCurrentUser) {
+        return (
+          <View style={styles.checkMarks}>
+            <Ionicons
+              name={item.unread ? 'checkmark-outline' : 'checkmark-done-outline'}
+              size={14}
+              color={Colors.SECONDARY}
+            />
+          </View>
+        );
+      }
+      return null;
+    };
 
     return (
       <View
@@ -37,25 +75,45 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
             {messageText}
           </Text>
         </TouchableOpacity>
-        <Text
-          style={[
-            styles.messageTime,
-            isSentByCurrentUser ? styles.userMessageTime : styles.receivedMessageTime,
-          ]}
-        >
-          {item.timestamp}
-        </Text>
+        <View style={styles.messageFooter}>
+          <Text
+            style={[
+              styles.messageTime,
+              isSentByCurrentUser ? styles.userMessageTime : styles.receivedMessageTime,
+            ]}
+          >
+            {item.timestamp}
+          </Text>
+          {renderCheckMarks()}
+        </View>
       </View>
     );
   };
 
+  const renderSectionHeader = ({ section: { title } }) => (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionHeaderText}>{title}</Text>
+    </View>
+  );
+
+  const sections = Object.keys(groupedMessages).map((date) => ({
+    title: date,
+    data: groupedMessages[date],
+  }));
+
   return (
-    <FlatList
-      data={messages}
-      renderItem={renderMessage}
-      keyExtractor={(item) => item.id}
-      contentContainerStyle={styles.chatList}
-    />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <SectionList
+        sections={sections}
+        renderItem={renderMessage}
+        renderSectionHeader={renderSectionHeader}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.chatList}
+      />
+    </KeyboardAvoidingView>
   );
 }
 
@@ -63,16 +121,29 @@ const styles = StyleSheet.create({
   chatList: {
     paddingBottom: 60,
   },
+  sectionHeader: {
+    backgroundColor: '#f0f0f0',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  sectionHeaderText: {
+    fontSize: 14,
+    color: '#555',
+    fontFamily: 'Poppins-Medium',
+    textAlign: 'center',
+  },
   messageContainer: {
     marginVertical: 5,
     flexDirection: 'column',
     alignItems: 'flex-start',
     maxWidth: '100%',
+    paddingHorizontal: 15,
+    
   },
   messageBubble: {
     padding: 10,
     borderRadius: 10,
-    maxWidth: '75%',
+    maxWidth: '85%',
   },
   userMessageContainer: {
     alignItems: 'flex-end',
@@ -93,14 +164,18 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
   },
   messageText: {
-    fontSize: screenWidth * 0.03,
-    fontFamily: 'Poppins',
+    fontSize: screenWidth * 0.035,
+    fontFamily: 'Poppins-Medium',
   },
   userMessageText: {
     color: '#fff',
   },
   receivedMessageText: {
-    color: '#000',
+    color: '#444',
+  },
+  messageFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   messageTime: {
     fontSize: 12,
@@ -113,5 +188,8 @@ const styles = StyleSheet.create({
   },
   receivedMessageTime: {
     alignSelf: 'flex-start',
+  },
+  checkMarks: {
+    marginLeft: 5,
   },
 });
