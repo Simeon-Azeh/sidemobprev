@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, Dimensions } from 'react-native';
+import { View, Text, Image, Dimensions, ActivityIndicator } from 'react-native';
 import Carousel from 'react-native-snap-carousel';
 import { MaterialIcons } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth } from '../../../firebaseConfig';
+import NoRecommendedCourses from './NoRecommendedCourses';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -43,7 +44,7 @@ const renderItem = ({ item }) => {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
           <MaterialIcons name="star" size={20} color="#f1c40f" />
-          <Text style={{ marginLeft: 5, fontSize: 14, color: '#a9a9a9', fontFamily: 'Poppins' }}>{item.ratings} ({item.reviews} reviews)</Text>
+          <Text style={{ marginLeft: 5, fontSize: 14, color: '#a9a9a9', fontFamily: 'Poppins' }}>{item.ratings.toFixed(1)} ({item.reviews} reviews)</Text>
         </View>
       </View>
     </View>
@@ -72,18 +73,28 @@ const RecommendedCoursesCarousel = () => {
           const categories = new Set();
 
           savedCoursesSnapshot.forEach(doc => {
-            categories.add(doc.data().category);
+            const data = doc.data();
+            if (data.category) {
+              categories.add(data.category);
+            }
           });
 
           enrolledCoursesSnapshot.forEach(doc => {
-            categories.add(doc.data().category);
+            const data = doc.data();
+            if (data.category) {
+              categories.add(data.category);
+            }
           });
+
+          console.log('Collected categories:', Array.from(categories));
 
           const allCoursesRef = collection(db, 'courses');
           const allCoursesSnapshot = await getDocs(allCoursesRef);
           const allCourses = allCoursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
           const filteredCourses = allCourses.filter(course => categories.has(course.category));
+          console.log('Filtered courses:', filteredCourses);
+
           const shuffledCourses = filteredCourses.sort(() => 0.5 - Math.random());
           const selectedCourses = shuffledCourses.slice(0, 4);
 
@@ -102,17 +113,22 @@ const RecommendedCoursesCarousel = () => {
   return (
     <View>
       {loading ? (
-        <Text>Loading...</Text>
+        <ActivityIndicator size="large" color={Colors.PRIMARY} />
       ) : (
-        <Carousel
-          data={recommendedCourses}
-          renderItem={renderItem}
-          sliderWidth={sliderWidth}
-          itemWidth={itemWidth}
-          inactiveSlideScale={0.9}
-          inactiveSlideOpacity={0.7}
-          contentContainerCustomStyle={{ overflow: 'visible' }}
-        />
+        recommendedCourses.length > 0 ? (
+          <Carousel
+            data={recommendedCourses}
+            renderItem={renderItem}
+            sliderWidth={sliderWidth}
+            itemWidth={itemWidth}
+            inactiveSlideScale={0.9}
+            inactiveSlideOpacity={0.7}
+            contentContainerCustomStyle={{ overflow: 'visible' }}
+          />
+        ) : (
+          <NoRecommendedCourses />
+
+        )
       )}
     </View>
   );

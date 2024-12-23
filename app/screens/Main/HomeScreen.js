@@ -11,7 +11,7 @@ import StudyTracker from '../../components/HomeScreen/StudyTracker';
 import RecommendedCoursesCarousel from '../../components/HomeScreen/RecommendedCoursesCarousel';
 import Feather from '@expo/vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
-import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { auth } from '../../../firebaseConfig';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import HomeScreenSkeleton from '../../components/HomeScreenSkeleton';
@@ -33,16 +33,21 @@ export default function HomeScreen() {
           const q = query(collection(getFirestore(), 'Enrollments'), where('userEmail', '==', user.email));
           const querySnapshot = await getDocs(q);
           const courses = [];
-          querySnapshot.forEach((doc) => {
-            const data = doc.data();
-            courses.push({
-              id: doc.id,
-              title: data.courseTitle,
-              image: data.courseImage,
-              category: data.category || 'Unknown',
-              progress: data.progress || 0,
-            });
-          });
+          for (const enrollmentDoc of querySnapshot.docs) {
+            const data = enrollmentDoc.data();
+            const courseRef = doc(getFirestore(), 'courses', data.courseId);
+            const courseDoc = await getDoc(courseRef);
+            if (courseDoc.exists()) {
+              const courseData = courseDoc.data();
+              courses.push({
+                id: enrollmentDoc.id,
+                title: courseData.title,
+                image: courseData.image,
+                category: courseData.category || 'Unknown',
+                progress: data.progress || 0,
+              });
+            }
+          }
           setEnrolledCourses(courses);
         }
       } catch (error) {
@@ -104,6 +109,7 @@ export default function HomeScreen() {
             <Text style={{
               fontSize: 14,
               color: Colors.LIGHT_GRAY,
+              fontFamily: 'Poppins',
             }}>{item.category}</Text>
           </View>
         </View>

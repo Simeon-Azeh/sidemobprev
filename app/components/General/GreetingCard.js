@@ -48,6 +48,7 @@ export default function GreetingCard() {
       <Text style={{ fontFamily: 'Poppins-Medium', fontSize: screenWidth * 0.05, color: Colors.PRIMARY }}>
         {userName} <MaterialIcons name="waving-hand" size={18} color={Colors.SECONDARY} />
       </Text>
+      
     </View>
   );
 }

@@ -35,7 +35,11 @@ const SavedCourses = () => {
 
             return {
               ...savedCourse,
-              ...courseData,
+              title: courseData.title || 'Unknown',
+              image: courseData.image || '',
+              category: courseData.category || 'Unknown',
+              level: courseData.level || 'Unknown',
+              timeToComplete: courseData.timeToComplete || 'Unknown',
               ratings,
               reviews: reviews.length,
             };
@@ -110,7 +114,7 @@ const SavedCourses = () => {
             marginBottom: 20,
           }}>
             <Image
-              source={{ uri: course.courseImage }}
+              source={{ uri: course.image }}
               style={{
                 width: '100%',
                 height: 150,
@@ -118,7 +122,7 @@ const SavedCourses = () => {
               }}
             />
             <View style={{ padding: 10 }}>
-              <Text style={{ fontSize: 18, fontFamily: 'Poppins-Medium', color: Colors.SECONDARY }}>{course.courseTitle}</Text>
+              <Text style={{ fontSize: 18, fontFamily: 'Poppins-Medium', color: Colors.SECONDARY }}>{course.title}</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
                 <MaterialIcons name="school" size={20} color="#9835ff" />
                 <Text style={{ marginLeft: 5, fontSize: 14, color: '#9835ff', fontFamily: 'Poppins-Medium' }}>{course.level}</Text>

@@ -6,11 +6,11 @@ import Colors from '../../../assets/Utils/Colors';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const EnrolledCourseCard = ({ imageUri, courseTitle, courseCategory, hostImageUri, hostName, progress }) => {
+const EnrolledCourseCard = ({ courseId, imageUri, courseTitle, courseCategory, hostImageUri, hostName, progress }) => {
     const navigation = useNavigation();
 
     const handleContinueCourse = () => {
-        navigation.navigate('CourseMaterial', { courseTitle });
+        navigation.navigate('CourseMaterial', { courseId, courseTitle });
     };
 
     return (
@@ -44,7 +44,7 @@ const EnrolledCourseCard = ({ imageUri, courseTitle, courseCategory, hostImageUr
 
             {/* Continue Button */}
             <TouchableOpacity style={styles.continueButton} onPress={handleContinueCourse}>
-                <Text style={styles.continueButtonText}>Continue Course</Text>
+                <Text style={styles.continueButtonText}>{progress === 0 ? 'Start Course' : 'Continue Course'}</Text>
             </TouchableOpacity>
         </View>
     );
@@ -56,7 +56,6 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 15,
         marginBottom: 20,
-       
     },
     courseImage: {
         width: '100%',
@@ -68,7 +67,6 @@ const styles = StyleSheet.create({
         fontSize: screenWidth * 0.035,
         fontFamily: 'Poppins-Medium',
         color: Colors.SECONDARY,
-      
     },
     courseCategory: {
         fontSize: screenWidth * 0.03,
@@ -114,13 +112,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderWidth: 1,
         borderColor: Colors.PRIMARY,
-
     },
     continueButtonText: {
         color: '#9835FF',
         fontFamily: 'Poppins-Medium',
         fontSize: screenWidth * 0.03,
-
     },
 });
 
