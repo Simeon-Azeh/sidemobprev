@@ -1,26 +1,26 @@
 import React from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import Icon from 'react-native-vector-icons/Ionicons';
+import Alticon from 'react-native-vector-icons/Entypo';
 import Colors from '../../../assets/Utils/Colors';
 
 export default function InputSection({ message, setMessage, handleSend, handleFileAttachment, setShowEmojiPicker }) {
   return (
     <View style={styles.inputContainer}>
-      <TouchableOpacity style={styles.iconButton} onPress={handleFileAttachment}>
-        <Icon name="paperclip" size={25} color={Colors.SECONDARY} />
+      <TouchableOpacity
+        style={styles.iconButton}
+        onPress={() => setShowEmojiPicker(prev => !prev)}
+      >
+        <Alticon name="emoji-happy" size={25} color={Colors.SECONDARY} />
       </TouchableOpacity>
       <TextInput
         placeholder="Type a message..."
         value={message}
         onChangeText={setMessage}
         style={styles.textInput}
+        multiline
+        blurOnSubmit={false}
       />
-      <TouchableOpacity
-        style={styles.iconButton}
-        onPress={() => setShowEmojiPicker(prev => !prev)}
-      >
-        <Icon name="smile" size={25} color={Colors.SECONDARY} />
-      </TouchableOpacity>
       <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
         <Icon name="send" size={25} color="#fff" />
       </TouchableOpacity>
@@ -32,10 +32,10 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
+    padding: 5,
     backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#ddd',
+    borderTopColor: '#eee',
     position: 'absolute',
     bottom: 0,
     left: 0,
@@ -46,8 +46,8 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    paddingVertical: 5,
+    paddingHorizontal: 20,
     backgroundColor: '#f0f0f0',
     borderRadius: 25,
     fontSize: 16,
@@ -57,6 +57,10 @@ const styles = StyleSheet.create({
   sendButton: {
     backgroundColor: Colors.PRIMARY,
     padding: 10,
-    borderRadius: 20,
+    borderRadius: 50,
+    marginHorizontal: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    display: 'flex',
   },
 });

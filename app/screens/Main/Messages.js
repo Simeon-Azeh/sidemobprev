@@ -43,6 +43,7 @@ export default function Messages() {
     { key: 'groups', title: 'Groups' },
   ]);
   const [users, setUsers] = useState([]);
+  const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -72,8 +73,13 @@ export default function Messages() {
     fetchUsers();
   }, []);
 
+  const filteredUsers = users.filter(user =>
+    user.name.toLowerCase().includes(searchText.toLowerCase()) ||
+    user.email.toLowerCase().includes(searchText.toLowerCase())
+  );
+
   const renderScene = SceneMap({
-    chats: () => <PeopleTab users={users} />,
+    chats: () => <PeopleTab users={filteredUsers} />,
     groups: GroupsTab,
   });
 
@@ -102,7 +108,7 @@ export default function Messages() {
 
   return (
     <View style={styles.container}>
-      <MessageHeader />
+      <MessageHeader setSearchText={setSearchText} />
       <TabView
         navigationState={{ index, routes }}
         renderScene={renderScene}

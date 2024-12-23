@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "sidecmobileapp",
+    "name": "Sidec",
     "slug": "sidecmobileprev",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -13,14 +13,16 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.kaycoder.sidecmobileapp"
+      "bundleIdentifier": "com.kaycoder.sidecmobileapp",
+      "displayName": "Sidec" 
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon2.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.kaycoder.sidecmobileapp"
+      "package": "com.kaycoder.sidecmobileapp",
+      "label": "Sidec" 
     },
     "web": {
       "favicon": "./assets/favicon.png"

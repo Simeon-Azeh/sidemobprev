@@ -15,19 +15,9 @@ import { useNavigation } from '@react-navigation/native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-export default function ChatHeader({ chat, realTimestamp, setActive }) {
+export default function ChatHeader({ chat }) {
   const navigation = useNavigation();
   const [isModalVisible, setModalVisible] = useState(false);
-  const [activeStatus, setActiveStatus] = useState(chat.active ? 'Active now' : `Last seen ${realTimestamp}`);
-
-  // Update the active state when the user views the chat page
-  useEffect(() => {
-    if (setActive) setActive(true); // Inform parent or context that user is online
-    setActiveStatus('Active now');
-    return () => {
-      if (setActive) setActive(false); // Reset to inactive when leaving
-    };
-  }, [setActive]);
 
   const handleProfilePageNavigation = () => {
     navigation.navigate('ProfilePage', { user: chat });
@@ -74,7 +64,6 @@ export default function ChatHeader({ chat, realTimestamp, setActive }) {
         <Image source={{ uri: chat.profileImage }} style={styles.profileImage} />
         <View style={styles.headerTextContainer}>
           <Text style={styles.chatName}>{chat.name.split(' ')[0]}</Text>
-          <Text style={styles.activeStatus}>{activeStatus}</Text>
         </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.ellipsisButton}>
@@ -140,11 +129,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Poppins-Medium',
     color: Colors.SECONDARY,
-  },
-  activeStatus: {
-    fontSize: screenWidth * 0.03,
-    color: '#888',
-    fontFamily: 'Poppins',
   },
   ellipsisButton: {
     paddingHorizontal: 10,

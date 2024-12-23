@@ -83,9 +83,11 @@ export default function ChatCard({ chat }) {
               ? styles.unreadMessage
               : null,
           ]}
+          numberOfLines={1} // Limit the number of lines to 1
+          ellipsizeMode="tail" // Add ellipsis at the end if the text is too long
         >
           {lastMessage
-            ? `${lastMessage.text.slice(0, 20)}${lastMessage.text.length > 20 ? '...' : ''}`
+            ? lastMessage.text
             : 'Select chat to start messaging'}
         </Text>
         {unreadCount > 0 && (
