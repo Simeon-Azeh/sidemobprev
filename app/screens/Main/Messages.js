@@ -6,6 +6,7 @@ import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIc
 import Colors from '../../../assets/Utils/Colors';
 import MessageHeader from '../../components/Messages/MessageHeader';
 import ChatCard from '../../components/Messages/ChatCard';
+import GroupCreationModal from '../../components/Messages/GroupCreationModal';
 import { useNavigation } from '@react-navigation/native';
 import { getFirestore, collection, query, onSnapshot, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
@@ -27,14 +28,29 @@ const PeopleTab = ({ users }) => {
   );
 };
 
-const GroupsTab = () => (
-  <View style={styles.centeredView}>
-    <Icon name="users" size={50} color="#888" />
-    <Text style={styles.noGroupsText}>
-      No groups available yet, come back soon!
-    </Text>
-  </View>
-);
+const GroupsTab = ({ groups }) => {
+  const navigation = useNavigation();
+
+  return (
+    <FlatList
+      data={groups}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          style={styles.groupCard}
+          onPress={() => navigation.navigate('GroupChatPage', { chat: item })}
+        >
+          <Image source={{ uri: item.profilePicture }} style={styles.groupAvatar} />
+          <View style={styles.groupInfo}>
+            <Text style={styles.groupName}>{item.name}</Text>
+            <Text style={styles.groupDescription}>{item.description}</Text>
+          </View>
+        </TouchableOpacity>
+      )}
+      keyExtractor={item => item.id}
+      contentContainerStyle={styles.listContent}
+    />
+  );
+};
 
 export default function Messages() {
   const [index, setIndex] = useState(0);
@@ -43,7 +59,9 @@ export default function Messages() {
     { key: 'groups', title: 'Groups' },
   ]);
   const [users, setUsers] = useState([]);
+  const [groups, setGroups] = useState([]);
   const [searchText, setSearchText] = useState('');
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -70,7 +88,25 @@ export default function Messages() {
       }
     };
 
+    const fetchGroups = async () => {
+      try {
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        const db = getFirestore();
+        const groupsRef = collection(db, 'groups');
+        const querySnapshot = await getDocs(groupsRef);
+        const groupsData = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        })).filter(group => group.visibility === 'public' || group.members.includes(currentUser.email) || group.createdBy === currentUser.email);
+        setGroups(groupsData);
+      } catch (error) {
+        console.error("Error fetching groups:", error);
+      }
+    };
+
     fetchUsers();
+    fetchGroups();
   }, []);
 
   const filteredUsers = users.filter(user =>
@@ -78,13 +114,17 @@ export default function Messages() {
     user.email.toLowerCase().includes(searchText.toLowerCase())
   );
 
+  const filteredGroups = groups.filter(group =>
+    group.visibility === 'public' || group.members.includes(getAuth().currentUser.email) || group.createdBy === getAuth().currentUser.email
+  );
+
   const renderScene = SceneMap({
     chats: () => <PeopleTab users={filteredUsers} />,
-    groups: GroupsTab,
+    groups: () => <GroupsTab groups={filteredGroups} />,
   });
 
   const handleAddNewChat = () => {
-    Alert.alert('Add New Chat', 'We are working on it.');
+    setIsModalVisible(true);
   };
 
   const renderTabBar = props => (
@@ -119,6 +159,11 @@ export default function Messages() {
       <TouchableOpacity style={styles.floatingButton} onPress={handleAddNewChat}>
         <MaterialCommunityIcon name="message-plus-outline" size={30} color="#fff" />
       </TouchableOpacity>
+      <GroupCreationModal
+        visible={isModalVisible}
+        onClose={() => setIsModalVisible(false)}
+        users={users}
+      />
     </View>
   );
 }
@@ -167,5 +212,29 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     marginTop: 20,
     fontSize: screenWidth * 0.04,
+  },
+  groupCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  groupAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 10,
+  },
+  groupInfo: {
+    flex: 1,
+  },
+  groupName: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 16,
+  },
+  groupDescription: {
+    fontFamily: 'Poppins',
+    color: '#888',
   },
 });

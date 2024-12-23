@@ -52,6 +52,7 @@ import UploadPost from './app/screens/IQlink/UploadPost';
 import IQprofile from './app/screens/IQlink/IQProfile';
 import AppointmentBooking from './app/screens/SecondaryScreens/AppointmentBooking';
 import CustomHeaderTitle from './app/components/General/CustomHeaderTitle';
+import GroupChatPage from './app/components/Messages/GroupChatPage';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const Stack = createStackNavigator();
@@ -226,6 +227,7 @@ export default function App() {
         <Stack.Screen name="Drawer" component={DrawerNavigator} options={{ headerShown: false }} />
         <Stack.Screen name="Messages" component={Messages} options={{ headerShown: false }} />
         <Stack.Screen name="ChatPage" component={ChatPage} options={{ headerShown: false }} />
+        <Stack.Screen name="GroupChatPage" component={GroupChatPage} options={{ headerShown: false }} />
         <Stack.Screen name="ProfilePage" component={ProfilePage} options={{ title: 'Profile' }} />
         <Stack.Screen name="PaymentPage" component={PaymentPage} options={{ title: 'Pay',
           headerTitle: () => <CustomHeaderTitle title="Pay" />

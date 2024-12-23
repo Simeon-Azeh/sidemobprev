@@ -4,13 +4,9 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import Alticon from 'react-native-vector-icons/Entypo';
 import Colors from '../../../assets/Utils/Colors';
 
-export default function InputSection({ message, setMessage, handleSend, handleFileAttachment, setShowEmojiPicker, chatType }) {
+export default function GroupInputSection({ message, setMessage, handleSend, setShowEmojiPicker }) {
   const handleSendMessage = () => {
-    if (chatType === 'group') {
-      handleSend('group');
-    } else {
-      handleSend('individual');
-    }
+    handleSend('group');
   };
 
   return (
