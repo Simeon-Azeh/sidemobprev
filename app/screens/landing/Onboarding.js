@@ -1,11 +1,14 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, TextInput, FlatList, Dimensions, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Swiper from 'react-native-swiper';
 import { Picker } from '@react-native-picker/picker';
 import { getFirestore, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth } from '../../../firebaseConfig';
 import { sendEmailVerification } from 'firebase/auth';
+import * as ImagePicker from 'expo-image-picker';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage'; 
+import firebase from '../../../firebaseConfig';
 
 import Colors from '../../../assets/Utils/Colors';
 import { useNavigation } from '@react-navigation/native';
@@ -14,7 +17,7 @@ import welcome2 from '../../../assets/Images/Onboarding2.png';
 import welcome3 from '../../../assets/Images/Onboarding3.png';
 import welcome4 from '../../../assets/Images/Onboarding4.png';
 
-// Sample avatar images
+
 const avatars = [
   { id: '1', source: 'https://img.freepik.com/premium-vector/student-avatar-illustration-user-profile-icon-youth-avatar_118339-4395.jpg', label: 'Avatar 1' },
   { id: '2', source: 'https://img.freepik.com/premium-vector/logo-kid-gamer_573604-742.jpg', label: 'Avatar 2' },
@@ -24,6 +27,7 @@ const avatars = [
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const db = getFirestore();
+const storage = getStorage(); 
 
 const Onboarding = () => {
   const swiperRef = useRef(null);
@@ -34,6 +38,7 @@ const Onboarding = () => {
   const [city, setCity] = useState('');
   const [selectedCountry, setSelectedCountry] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState(null);
+  const [uploading, setUploading] = useState(false); 
 
   const handleGetStarted = async () => {
     try {
@@ -97,6 +102,29 @@ const Onboarding = () => {
       <Text style={styles.avatarLabel}>{item.label}</Text>
     </TouchableOpacity>
   );
+
+  const handlePickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setUploading(true); 
+      const { uri } = result.assets[0];
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const user = auth.currentUser;
+      const storageRef = ref(storage, `avatars/${user.uid}`);
+      await uploadBytes(storageRef, blob);
+      const downloadURL = await getDownloadURL(storageRef);
+      setSelectedAvatar(downloadURL);
+      setUploading(false); 
+      Alert.alert('Success', 'Profile picture uploaded successfully!');
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -221,6 +249,11 @@ const Onboarding = () => {
                 numColumns={2}
                 columnWrapperStyle={styles.avatarRow}
               />
+              <TouchableOpacity style={styles.primaryButton} onPress={handlePickImage}>
+                <Text style={styles.primaryButtonText}>Upload Your Own</Text>
+                <Icon name="cloud-upload" size={15} color={Colors.WHITE} />
+              </TouchableOpacity>
+              {uploading && <ActivityIndicator size="large" color={Colors.PRIMARY} />} 
               <TouchableOpacity style={styles.primaryButton} onPress={handleGetStarted}>
                 <Text style={styles.primaryButtonText}>Finish</Text>
                 <Icon name="arrow-forward" size={15} color={Colors.WHITE} />
@@ -233,7 +266,48 @@ const Onboarding = () => {
   );
 };
 
+
+
+
 const styles = StyleSheet.create({
+  // Your existing styles...
+  avatarContainer: {
+    flex: 1,
+    alignItems: 'center',
+    margin: 10,
+  },
+  selectedAvatar: {
+    borderWidth: 2,
+    borderColor: Colors.PRIMARY,
+  },
+  avatarImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  avatarLabel: {
+    marginTop: 5,
+    fontSize: 14,
+    color: Colors.SECONDARY,
+  },
+  avatarRow: {
+    justifyContent: 'space-between',
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.PRIMARY,
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 20,
+  },
+  primaryButtonText: {
+    color: Colors.WHITE,
+    fontSize: 16,
+    marginRight: 10,
+  },
+  // Add other styles as needed...
   wrapper: {},
   slideContainer: {
     flex: 1,
@@ -391,6 +465,42 @@ const styles = StyleSheet.create({
   },
   avatarRow: {
     justifyContent: 'space-around',
+  },
+  avatarContainer: {
+    flex: 1,
+    alignItems: 'center',
+    margin: 10,
+  },
+  selectedAvatar: {
+    borderWidth: 2,
+    borderColor: Colors.PRIMARY,
+  },
+  avatarImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+  },
+  avatarLabel: {
+    marginTop: 5,
+    fontSize: 14,
+    color: Colors.SECONDARY,
+  },
+  avatarRow: {
+    justifyContent: 'space-between',
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.PRIMARY,
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 20,
+  },
+  primaryButtonText: {
+    color: Colors.WHITE,
+    fontSize: 16,
+    marginRight: 10,
   },
 });
 

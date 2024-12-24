@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, TouchableOpacity, Image, Text, Modal, FlatList, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, TextInput, TouchableOpacity, Image, Text, Modal, FlatList, Dimensions, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import Colors from '../../../assets/Utils/Colors';
 import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth } from '../../../firebaseConfig';
+import { auth, storage } from '../../../firebaseConfig';
 import DefaultAvatar from '../../../assets/Images/defaultAvatar.jpg';
+import * as ImagePicker from 'expo-image-picker';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -25,6 +27,7 @@ export default function ProfileTab() {
   const [selectedAvatar, setSelectedAvatar] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -55,7 +58,7 @@ export default function ProfileTab() {
           ...userData,
           avatar: selectedAvatar,
         });
-        alert('Profile updated successfully!');
+        Alert.alert('Success', 'Profile updated successfully!');
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -69,11 +72,38 @@ export default function ProfileTab() {
     setModalVisible(false);
   };
 
+  const handlePickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setUploading(true);
+      const { uri } = result.assets[0];
+      const response = await fetch(uri);
+      const blob = await response.blob();
+      const user = auth.currentUser;
+      const storageRef = ref(storage, `avatars/${user.uid}`);
+      await uploadBytes(storageRef, blob);
+      const downloadURL = await getDownloadURL(storageRef);
+      setSelectedAvatar(downloadURL);
+      setUploading(false);
+      Alert.alert('Success', 'Profile picture uploaded successfully!');
+    }
+  };
+
+  const handleCameraPress = () => {
+    setModalVisible(true);
+  };
+
   return (
     <View style={{ paddingHorizontal: 20 }}>
       <View style={{ alignItems: 'center', marginBottom: 20 }}>
         <Image source={selectedAvatar ? { uri: selectedAvatar } : DefaultAvatar} style={{ width: screenWidth * 0.2, height: screenWidth * 0.2, borderRadius: 50 }} />
-        <TouchableOpacity onPress={() => setModalVisible(true)} style={{ position: 'absolute', bottom: 0, right: screenWidth * 0.36, backgroundColor: 'white', borderRadius: 50, width: screenWidth * 0.08, height: screenWidth * 0.08, alignItems: 'center', justifyContent: 'center' }}>
+        <TouchableOpacity onPress={handleCameraPress} style={{ position: 'absolute', bottom: 0, right: screenWidth * 0.36, backgroundColor: 'white', borderRadius: 50, width: screenWidth * 0.08, height: screenWidth * 0.08, alignItems: 'center', justifyContent: 'center' }}>
           <MaterialCommunityIcons name="camera-plus-outline" size={26} color={Colors.PRIMARY} />
         </TouchableOpacity>
       </View>
@@ -112,6 +142,16 @@ export default function ProfileTab() {
             )}
             numColumns={3}
           />
+          <TouchableOpacity style={styles.uploadButton} onPress={handlePickImage}>
+            {uploading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <MaterialCommunityIcons name="upload" size={20} color="white" />
+                <Text style={styles.uploadButtonText}>Upload Custom Avatar</Text>
+              </>
+            )}
+          </TouchableOpacity>
           <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
             <Text style={styles.closeButtonText}>Close</Text>
           </TouchableOpacity>
@@ -168,6 +208,20 @@ const styles = StyleSheet.create({
     height: screenWidth * 0.25,
     borderRadius: 10,
     margin: 10
+  },
+  uploadButton: {
+    backgroundColor: Colors.PRIMARY,
+    padding: 10,
+    borderRadius: 5,
+    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  uploadButtonText: {
+    color: 'white',
+    fontFamily: 'Poppins-Medium',
+    marginLeft: 10
   },
   closeButton: {
     backgroundColor: Colors.PRIMARY,
