@@ -68,12 +68,20 @@ export default function ChatCard({ chat }) {
     });
   };
 
+  const formatName = (name) => {
+    const nameParts = name.split(' ');
+    if (nameParts.length > 2) {
+      return `${nameParts[0]} ${nameParts[1]}`;
+    }
+    return name;
+  };
+
   return (
     <TouchableOpacity style={styles.cardContainer} onPress={handlePress}>
       <Image source={{ uri: chat.profileImage }} style={styles.profileImage} />
       <View style={styles.textContainer}>
         <View style={styles.header}>
-          <Text style={styles.name}>{chat.name}</Text>
+          <Text style={styles.name}>{formatName(chat.name)}</Text>
           <Text style={styles.time}>{lastMessage ? lastMessage.timestamp : ''}</Text>
         </View>
         <Text

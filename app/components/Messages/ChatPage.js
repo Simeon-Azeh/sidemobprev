@@ -7,6 +7,7 @@ import EmojiPicker from './EmojiPicker';
 import * as DocumentPicker from 'expo-document-picker';
 import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { Timestamp } from 'firebase/firestore';
 
 export default function ChatPage({ route }) {
   const { chat, realTimestamp } = route.params;
@@ -29,7 +30,7 @@ export default function ChatPage({ route }) {
         return {
           id: doc.id,
           ...data,
-          timestamp: data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+          timestamp: data.timestamp ? new Date(data.timestamp.seconds * 1000).toISOString() : '',
         };
       });
       setMessages(messagesData);
@@ -49,7 +50,7 @@ export default function ChatPage({ route }) {
         text: message,
         sentByUser: currentUser.email,
         receivedByUser: chat.email,
-        timestamp: new Date(),
+        timestamp: Timestamp.now(),
         unread: true, // Add unread field
       });
       setMessage('');

@@ -42,8 +42,8 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
   }, [messages, currentUser.email]);
 
   const formatDate = (timestamp) => {
-    const datePart = timestamp.split(' at ')[0];
-    const date = new Date(datePart);
+    if (!timestamp) return '';
+    const date = new Date(timestamp);
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(today.getDate() - 1);
@@ -66,7 +66,7 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
     return acc;
   }, {});
 
-  const sortedMessages = Object.keys(groupedMessages).sort((a, b) => new Date(b) - new Date(a)).map(date => ({
+  const sortedMessages = Object.keys(groupedMessages).sort((a, b) => new Date(a) - new Date(b)).map(date => ({
     title: date,
     data: groupedMessages[date],
   }));
@@ -122,7 +122,7 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
               isSentByCurrentUser ? styles.userMessageTimeInBubble : styles.receivedMessageTimeInBubble,
             ]}
           >
-            {item.timestamp}
+            {item.timestamp ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
           </Text>
         </TouchableOpacity>
         <View style={styles.messageFooter}>
@@ -162,6 +162,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
     paddingVertical: 5,
     paddingHorizontal: 10,
+    marginBottom: 15,
   },
   sectionHeaderText: {
     fontSize: 14,

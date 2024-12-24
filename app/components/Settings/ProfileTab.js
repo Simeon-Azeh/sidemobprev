@@ -73,6 +73,12 @@ export default function ProfileTab() {
   };
 
   const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'We need permission to access your photo library.');
+      return;
+    }
+
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -82,16 +88,22 @@ export default function ProfileTab() {
 
     if (!result.canceled) {
       setUploading(true);
-      const { uri } = result.assets[0];
-      const response = await fetch(uri);
-      const blob = await response.blob();
-      const user = auth.currentUser;
-      const storageRef = ref(storage, `avatars/${user.uid}`);
-      await uploadBytes(storageRef, blob);
-      const downloadURL = await getDownloadURL(storageRef);
-      setSelectedAvatar(downloadURL);
-      setUploading(false);
-      Alert.alert('Success', 'Profile picture uploaded successfully!');
+      try {
+        const { uri } = result.assets[0];
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        const user = auth.currentUser;
+        const storageRef = ref(storage, `avatars/${user.uid}`);
+        await uploadBytes(storageRef, blob);
+        const downloadURL = await getDownloadURL(storageRef);
+        setSelectedAvatar(downloadURL);
+        Alert.alert('Success', 'Profile picture uploaded successfully!');
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        Alert.alert('Error', `Failed to upload profile picture: ${error.message}`);
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
