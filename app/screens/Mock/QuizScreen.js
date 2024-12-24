@@ -157,7 +157,7 @@ export default function QuizScreen() {
     const handleSubmit = async () => {
         setSubmitting(true);
         let score = 0;
-
+    
         questions.forEach(question => {
             const userAnswer = selectedAnswers[question.id];
             if (question.type === 'MCQs' && userAnswer === question.answer) {
@@ -178,17 +178,26 @@ export default function QuizScreen() {
                 }
             }
         });
-
+    
         const totalQuestions = questions.length;
-        const coinsEarned = score * 10; // Coins earned based on the score
-        const timeSpent = totalTime - timeLeft; // Calculate the time spent
-
-        const db = getFirestore();
+        let coinsEarned = score * 10; // Base coins earned based on the score
+    
+        // Adjust coins based on difficulty
         const userChoices = await AsyncStorage.getItem('userChoices');
-        const { subjects, difficulty } = JSON.parse(userChoices);
+        const { difficulty } = JSON.parse(userChoices);
+        if (difficulty === 'Easy') {
+            coinsEarned = Math.floor(coinsEarned * 0.4); // Less than half for Easy
+        } else if (difficulty === 'Medium') {
+            coinsEarned = Math.floor(coinsEarned * 0.5); // Half for Medium
+        } // Full points for Hard, no adjustment needed
+    
+        const timeSpent = totalTime - timeLeft; // Calculate the time spent
+    
+        const db = getFirestore();
+        const { subjects } = JSON.parse(userChoices);
         const auth = getAuth();
         const user = auth.currentUser;
-
+    
         try {
             await addDoc(collection(db, 'quizResults'), {
                 userId: user.uid,
@@ -204,14 +213,14 @@ export default function QuizScreen() {
         } catch (error) {
             console.error("Error saving quiz results to Firestore:", error);
         }
-
+    
         navigation.navigate('QuizResults', {
             score: score, // Pass the raw score to the results page
             totalQuestions,
             coinsEarned,
             totalTime: timeSpent, // Pass the time spent to the results page
         });
-
+    
         setSubmitting(false);
     };
 
