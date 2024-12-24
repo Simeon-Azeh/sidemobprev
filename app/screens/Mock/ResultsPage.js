@@ -2,28 +2,23 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
-import CelebrationImage from '../../../assets/Images/CelebrationImage.png'; // Add your celebration image here
+import CelebrationImage from '../../../assets/Images/CelebrationImage.png';
 import { useNavigation } from '@react-navigation/native';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Define the pass mark
 const PASS_MARK = 0.5; // 50% of the total score
 
 export default function QuizResults({ route }) {
   const navigation = useNavigation();
   const { score, totalQuestions, coinsEarned, totalTime } = route.params;
 
-  // Calculate the percentage score
   const percentageScore = score / totalQuestions;
-
-  // Determine the message based on the pass mark
   const scoreMessage = percentageScore >= PASS_MARK ? "Congratulations!" : "You can do better! Try again";
 
   return (
     <View style={styles.container}>
-      {/* Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('QuizChoice')}>
         <Ionicons name="chevron-back" size={32} color={Colors.PRIMARY} />
       </TouchableOpacity>
@@ -33,11 +28,11 @@ export default function QuizResults({ route }) {
         <Text style={styles.scoreMessage}>{scoreMessage}</Text>
         <Text style={styles.scoreText}>You scored {score} out of {totalQuestions}!</Text>
         <Text style={styles.coinsText}>+ <FontAwesome6 name="coins" size={18} color={Colors.PRIMARY} /> {coinsEarned}</Text>
-        <Text style={styles.timeText}>Time Taken: {totalTime}</Text>
+        <Text style={styles.timeText}>Time Taken: {totalTime} seconds</Text>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.correctAnswersButton} onPress={() => navigation.navigate('CorrectAnswers', { score, totalQuestions })}>
-            <Text style={[styles.buttonText, style={color: Colors.PRIMARY}]}>See Correct Answers</Text>
+            <Text style={[styles.buttonText, { color: Colors.PRIMARY }]}>See Correct Answers</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.retakeQuizButton} onPress={() => navigation.navigate('QuizScreen')}>
             <Text style={styles.buttonText}>Retake Quiz</Text>
@@ -58,7 +53,6 @@ const styles = StyleSheet.create({
     top: 60,
     left: 20,
     zIndex: 1,
-
   },
   content: {
     flex: 1,
@@ -116,7 +110,6 @@ const styles = StyleSheet.create({
     width: '45%',
     borderWidth: 1,
     borderColor: Colors.PRIMARY,
-
   },
   retakeQuizButton: {
     backgroundColor: Colors.PRIMARY,

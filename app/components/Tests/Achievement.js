@@ -1,5 +1,3 @@
-// components/Achievement.js
-
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, Share , Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
@@ -13,6 +11,7 @@ const Achievement = () => {
   const correctAnswers = 15;
   const wrongAnswers = 5;
   const lastBadge = require('../../../assets/Images/award_one.jpg'); // Adjust the path if needed
+  const betterThanPercent = 75; // Example: User performed better than 75% of users
 
   const onShare = async () => {
     try {
@@ -35,6 +34,9 @@ const Achievement = () => {
         <Text style={styles.scoreTitle}>Congratulations! You scored</Text>
         <Text style={styles.score}>{lastScore}</Text>
         <Text style={styles.scoreTitle}>on your last attempt</Text>
+        <Text style={styles.encouragingText}>
+          You performed better than {betterThanPercent}% of users. Keep up the great work!
+        </Text>
       </View>
 
       <View style={styles.statsContainer}>
@@ -52,11 +54,6 @@ const Achievement = () => {
         </View>
       </View>
 
-      <View style={styles.badgeContainer}>
-        <Text style={styles.badgeTitle}>Last Badge Won</Text>
-        <Image source={lastBadge} style={styles.badgeImage} />
-      </View>
-
       <TouchableOpacity style={styles.shareButton} onPress={onShare}>
         <Text style={styles.shareText}>Share Achievement</Text>
       </TouchableOpacity>
@@ -67,7 +64,7 @@ const Achievement = () => {
 const styles = StyleSheet.create({
   container: {
     padding: 20,
-   
+    backgroundColor: '#ffffff',
     borderRadius: 10,
     marginVertical: 10,
   },
@@ -76,68 +73,85 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   scoreTitle: {
-    fontSize: screenWidth * 0.035,
+    fontSize: screenWidth * 0.04,
     fontFamily: 'Poppins-Medium',
     color: Colors.SECONDARY,
+    textAlign: 'center',
+    marginVertical: 5,
   },
   score: {
-    fontSize: screenWidth * 0.06,
-    fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
-    backgroundColor: '#f0f0f0',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 10,
-    marginBottom: 20,
+    fontSize: screenWidth * 0.08,
+    fontFamily: 'Poppins-Bold',
+    color: Colors.PRIMARY,
+    backgroundColor: '#eaf4fc',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderRadius: 50,
+    marginVertical: 10,
     textAlign: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: screenWidth * 0.3,
+    width: screenWidth * 0.4,
+  },
+  encouragingText: {
+    fontSize: screenWidth * 0.035,
+    fontFamily: 'Poppins',
+    color: Colors.SECONDARY,
+    textAlign: 'center',
+    marginTop: 10,
   },
   statsContainer: {
-    marginBottom: 20,
-    alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    padding: 10,
+    justifyContent: 'space-around',
+    marginBottom: 20,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
   statItem: {
-    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    flex: 1,
   },
   statText: {
-    fontSize: screenWidth * 0.03,
-    marginLeft: 10,
+    fontSize: screenWidth * 0.035,
+    marginTop: 8,
     color: Colors.SECONDARY,
     fontFamily: 'Poppins-Medium',
+    textAlign: 'center',
   },
   badgeContainer: {
     alignItems: 'center',
+    marginBottom: 20,
   },
   badgeTitle: {
-    fontSize: screenWidth * 0.04,
-    fontFamily: 'Poppins-Medium',
+    fontSize: screenWidth * 0.045,
+    fontFamily: 'Poppins-SemiBold',
     color: Colors.PRIMARY,
     marginBottom: 10,
   },
   badgeImage: {
-    width: 100,
-    height: 100,
+    width: screenWidth * 0.25,
+    height: screenWidth * 0.25,
+    borderRadius: screenWidth * 0.125,
+    borderWidth: 2,
+    borderColor: Colors.PRIMARY,
   },
   shareButton: {
     marginTop: 20,
-    paddingVertical: 10,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 25,
     backgroundColor: Colors.PRIMARY,
-    borderRadius: 5,
+    borderRadius: 8,
     alignItems: 'center',
+    shadowColor: Colors.PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
   },
   shareText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: '#ffffff',
+    fontSize: screenWidth * 0.04,
+    fontFamily: 'Poppins-Medium',
   },
 });
 
