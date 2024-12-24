@@ -1,32 +1,64 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import Colors from '../../../assets/Utils/Colors'; // Adjust the path if needed
 import Icon from 'react-native-vector-icons/FontAwesome5'; // Import icon library
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const UpcomingTasks = () => {
-  // Sample data for upcoming tasks
-  const tasks = [
-    { id: 1, title: 'Math Assignment', dueDate: '2024-08-15', icon: 'book' },
-    { id: 2, title: 'Science Project', dueDate: '2024-08-20', icon: 'flask' },
-    { id: 3, title: 'History Essay', dueDate: '2024-08-25', icon: 'scroll' },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState([]);
+  const [assessments, setAssessments] = useState([]);
+  const [deadlines, setDeadlines] = useState([]);
 
-  const assessments = [
-    { id: 1, title: 'Mid-Term Exam', date: '2024-08-18', icon: 'graduation-cap' },
-    { id: 2, title: 'Final Project Presentation', date: '2024-08-30', icon: 'clipboard' },
-  ];
+  useEffect(() => {
+    const fetchTasks = async () => {
+      setLoading(true);
+      const db = getFirestore();
 
-  const deadlines = [
-    { id: 1, title: 'Submit Research Paper', date: '2024-09-01', icon: 'file' },
-    { id: 2, title: 'Complete Group Discussion', date: '2024-09-05', icon: 'users' },
-  ];
+      try {
+        const tasksSnapshot = await getDocs(collection(db, 'tasks'));
+        const tasksData = [];
+        const assessmentsData = [];
+        const deadlinesData = [];
+
+        tasksSnapshot.forEach(doc => {
+          const data = doc.data();
+          if (data.type === 'task') {
+            tasksData.push({ id: doc.id, ...data });
+          } else if (data.type === 'assessment') {
+            assessmentsData.push({ id: doc.id, ...data });
+          } else if (data.type === 'deadline') {
+            deadlinesData.push({ id: doc.id, ...data });
+          }
+        });
+
+        setTasks(tasksData);
+        setAssessments(assessmentsData);
+        setDeadlines(deadlinesData);
+      } catch (error) {
+        console.error('Error fetching tasks:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, []);
 
   const handlePress = (item) => {
     // Handle item press, e.g., navigate to a details screen or show more information
     console.log('Pressed:', item);
   };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={Colors.PRIMARY} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -77,7 +109,7 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: screenWidth * 0.035,
-   fontFamily: 'Poppins-Medium',
+    fontFamily: 'Poppins-Medium',
     color: Colors.PRIMARY,
     marginBottom: 10,
   },

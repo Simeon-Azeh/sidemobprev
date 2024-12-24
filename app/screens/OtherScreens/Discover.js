@@ -1,36 +1,67 @@
-// Your updated Discover.js without confetti
-
-import React, { useState, useRef } from 'react';
-import { View, Text, Image, StyleSheet, Modal, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Image, StyleSheet, Modal, TouchableOpacity, Dimensions, ScrollView, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import Header from '../../components/General/Header';
 import LeaderboardImg from '../../../assets/Images/LeaderboardImg.png';
 import Colors from '../../../assets/Utils/Colors';
 import { Calendar } from 'react-native-calendars';
 import UpcomingTasks from '../../components/Discover/UpcomingTasks';
-import { useNavigation  } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
+import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function Discover() {
   const navigation = useNavigation();
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
+  const [leaderboardData, setLeaderboardData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
 
-  const leaderboardData = [
-    { id: 1, name: 'nkengafac', coins: 1000, profileImage: require('../../../assets/Images/avatar7.jpg'), status: 'up' },
-    { id: 2, name: 'aron65', coins: 800, profileImage: require('../../../assets/Images/avatar4.jpg'), status: 'down' },
-    { id: 3, name: 'arreyateh23', coins: 600, profileImage: require('../../../assets/Images/avatar6.jpg'), status: 'up' },
-  ];
+  useEffect(() => {
+    const fetchLeaderboardData = async () => {
+      setLoadingLeaderboard(true);
+      const db = getFirestore();
+      const usersPoints = {};
 
-  const otherUsers = [
-    { id: 4, name: 'freddy', coins: 400, profileImage: require('../../../assets/Images/avatar3.jpg'), status: 'down' },
-    { id: 5, name: 'gibert65', coins: 300, profileImage: require('../../../assets/Images/avatar7.jpg'), status: 'up' },
-    { id: 6, name: 'simeon azeh', coins: 1000, profileImage: require('../../../assets/Images/avatar4.jpg'), status: 'up' },
-  ];
+      try {
+        const querySnapshot = await getDocs(collection(db, 'quizResults'));
+        querySnapshot.forEach(doc => {
+          const data = doc.data();
+          const userId = data.userId;
+          const coinsEarned = data.coinsEarned;
 
-  const handlePress = () => {
-    setModalVisible(true);
-  };
+          if (usersPoints[userId]) {
+            usersPoints[userId] += coinsEarned;
+          } else {
+            usersPoints[userId] = coinsEarned;
+          }
+        });
+
+        const usersData = await Promise.all(
+          Object.keys(usersPoints).map(async userId => {
+            const userDoc = await getDoc(doc(db, 'users', userId));
+            const userData = userDoc.data();
+            return {
+              id: userId,
+              name: userData.firstName,
+              coins: usersPoints[userId],
+              profileImage: userData.avatar,
+              status: 'up', // Placeholder status
+            };
+          })
+        );
+
+        usersData.sort((a, b) => b.coins - a.coins);
+        setLeaderboardData(usersData); // All users sorted by points
+      } catch (error) {
+        console.error('Error fetching leaderboard data:', error);
+      } finally {
+        setLoadingLeaderboard(false);
+      }
+    };
+
+    fetchLeaderboardData();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -40,37 +71,41 @@ export default function Discover() {
         <View style={styles.leaderboardContainer}>
           <Image source={LeaderboardImg} style={styles.leaderboardImg} />
 
-          {leaderboardData.map((user, index) => (
-            <View
-              key={user.id}
-              style={[
-                styles.leaderboardItem,
-                {
-                  left: index === 0 ? '15%' : index === 2 ? '68%' : '40%',
-                  top: index === 0 ? '20%' : index === 2 ? '30%' : '10%', // Adjust top positions
-                },
-              ]}
-            >
-              <Image source={user.profileImage} style={styles.profileImage} />
-              <Text style={styles.username}>{user.name}</Text>
-              <View style={styles.coinContainer}>
-                <Icon name="coins" size={16} color="#9835ff" />
-                <Text style={styles.coins}>+{user.coins}</Text>
-                <Icon
-                  name={user.status === 'up' ? 'arrow-up' : 'arrow-down'}
-                  size={16}
-                  color={user.status === 'up' ? '#9835ff' : '#ff0000'}
-                  style={styles.statusIcon}
-                />
+          {loadingLeaderboard ? (
+            <ActivityIndicator size="large" color={Colors.PRIMARY} />
+          ) : (
+            leaderboardData.slice(0, 3).map((user, index) => (
+              <View
+                key={user.id}
+                style={[
+                  styles.leaderboardItem,
+                  {
+                    left: index === 1 ? '15%' : index === 2 ? '68%' : '40%',
+                    top: index === 1 ? '25%' : index === 2 ? '30%' : '10%', // Adjust top positions
+                  },
+                ]}
+              >
+                <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
+                <Text style={styles.username}>{user.name}</Text>
+                <View style={styles.coinContainer}>
+                  <Icon name="coins" size={16} color="#9835ff" />
+                  <Text style={styles.coins}>+{user.coins}</Text>
+                  <Icon
+                    name={user.status === 'up' ? 'arrow-up' : 'arrow-down'}
+                    size={16}
+                    color={user.status === 'up' ? '#9835ff' : '#ff0000'}
+                    style={styles.statusIcon}
+                  />
+                </View>
               </View>
-            </View>
-          ))}
+            ))
+          )}
         </View>
 
         <View style={styles.otherUsersContainer}>
-          {otherUsers.map((user) => (
+          {leaderboardData.slice(3).map((user) => (
             <View key={user.id} style={styles.otherUserItem}>
-              <Image source={user.profileImage} style={styles.profileImageSmall} />
+              <Image source={{ uri: user.profileImage }} style={styles.profileImageSmall} />
               <Text style={styles.usernameSmall}>{user.name}</Text>
               <View style={styles.coinContainerSmall}>
                 <Icon name="coins" size={16} color="#9835ff" />
@@ -85,16 +120,11 @@ export default function Discover() {
             </View>
           ))}
         </View>
-          <View style={{flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20}}>
-          <TouchableOpacity style={{...styles.button, width: '45%'}} onPress={handlePress}>
-          <Text style={{...styles.buttonText, textAlign: 'center'}}>Take Part</Text>
-        </TouchableOpacity>
+
         <TouchableOpacity style={{...styles.button, backgroundColor: '#fff', borderColor: '#9835ff', borderWidth: 1}} onPress={() => navigation.navigate('RedeemPage')} >
           <Text style={{...styles.buttonText, color: '#9835ff'} }>Redeem Coins</Text>
         </TouchableOpacity>
 
-          </View>
-      
         <Modal
           animationType="fade"
           transparent={true}
@@ -112,38 +142,29 @@ export default function Discover() {
           </View>
         </Modal>
 
-         {/* Include the UpcomingTasks component */}
-         <UpcomingTasks />
-         <View style={styles.calendarContainer}>
-  <Calendar
-    // Specify the current date
-    current={new Date().toISOString().split('T')[0]} 
-    // Customize the calendar (optional)
-    theme={{
-      todayButtonTextColor: Colors.PRIMARY,
-      arrowColor: Colors.PRIMARY,
-      monthTextColor: Colors.SECONDARY,
-      textDayHeaderFontFamily: 'Poppins-Medium',
-      textMonthFontFamily: 'Poppins-Medium',
-      textDayFontFamily: 'Poppins-Medium',
-      textDayFontSize: screenWidth * 0.03,
-      textDayHeaderFontSize: screenWidth * 0.03,
-      textMonthFontSize: screenWidth * 0.04,
-      textMonthFontWeight: 'normal', // Adjust the month font weight
+      
 
-      // Customizing the current (today) date
-      todayTextColor: '#fff', // White text color for today
-      todayBackgroundColor: Colors.PRIMARY, // Background color for today
-
-
-      // Customizing the selected date
-      selectedDayTextColor: '#fff', // White text color for selected date
-      selectedDayBackgroundColor: '#9835ff', // Background color for selected date
-    }}
-  />
-</View>
-
-       
+        <View style={styles.calendarContainer}>
+          <Calendar
+            current={new Date().toISOString().split('T')[0]}
+            theme={{
+              todayButtonTextColor: Colors.PRIMARY,
+              arrowColor: Colors.PRIMARY,
+              monthTextColor: Colors.SECONDARY,
+              textDayHeaderFontFamily: 'Poppins-Medium',
+              textMonthFontFamily: 'Poppins-Medium',
+              textDayFontFamily: 'Poppins-Medium',
+              textDayFontSize: screenWidth * 0.03,
+              textDayHeaderFontSize: screenWidth * 0.03,
+              textMonthFontSize: screenWidth * 0.04,
+              textMonthFontWeight: 'normal',
+              todayTextColor: '#fff',
+              todayBackgroundColor: Colors.PRIMARY,
+              selectedDayTextColor: '#fff',
+              selectedDayBackgroundColor: '#9835ff',
+            }}
+          />
+        </View>
       </ScrollView>
     </View>
   );
@@ -245,7 +266,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
     width: '80%',
