@@ -1,17 +1,56 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Share , Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Share, Dimensions, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
-import Colors from '../../../assets/Utils/Colors'; // Adjust the path if needed
+import Colors from '../../../assets/Utils/Colors';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
 const Achievement = () => {
-  // Sample data for achievements
-  const lastScore = 85;
-  const totalQuestions = 20;
-  const correctAnswers = 15;
-  const wrongAnswers = 5;
-  const lastBadge = require('../../../assets/Images/award_one.jpg'); // Adjust the path if needed
-  const betterThanPercent = 75; // Example: User performed better than 75% of users
+  const [loading, setLoading] = useState(true);
+  const [lastScore, setLastScore] = useState(null);
+  const [totalQuestions, setTotalQuestions] = useState(0);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [wrongAnswers, setWrongAnswers] = useState(0);
+  const [betterThanPercent, setBetterThanPercent] = useState(0);
+
+  useEffect(() => {
+    const fetchLatestResult = async () => {
+      setLoading(true);
+      const db = getFirestore();
+      const auth = getAuth();
+      const user = auth.currentUser;
+
+      try {
+        const q = query(collection(db, 'quizResults'), where('userId', '==', user.uid));
+        const querySnapshot = await getDocs(q);
+        if (!querySnapshot.empty) {
+          let latestResult = null;
+          querySnapshot.forEach(doc => {
+            const docData = doc.data();
+            if (!latestResult || docData.timestamp.toDate() > latestResult.timestamp.toDate()) {
+              latestResult = docData;
+            }
+          });
+          if (latestResult) {
+            setLastScore(latestResult.score);
+            setTotalQuestions(latestResult.totalQuestions);
+            setCorrectAnswers(latestResult.score); // Assuming score is the number of correct answers
+            setWrongAnswers(latestResult.totalQuestions - latestResult.score);
+            // Calculate betterThanPercent (example logic, adjust as needed)
+            setBetterThanPercent(Math.floor((latestResult.score / latestResult.totalQuestions) * 100));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching latest result:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLatestResult();
+  }, []);
 
   const onShare = async () => {
     try {
@@ -27,6 +66,23 @@ const Achievement = () => {
       alert(error.message);
     }
   };
+
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={Colors.PRIMARY} />
+      </View>
+    );
+  }
+
+  if (lastScore === null) {
+    return (
+      <View style={styles.container}>
+        <Icon name="info-circle" size={42} color={Colors.SECONDARY} style={styles.icon} />
+        <Text style={styles.noDataText}>No achievement data available.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -67,6 +123,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 10,
     marginVertical: 10,
+    alignItems: 'center',
   },
   scoreContainer: {
     alignItems: 'center',
@@ -119,23 +176,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     textAlign: 'center',
   },
-  badgeContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  badgeTitle: {
-    fontSize: screenWidth * 0.045,
-    fontFamily: 'Poppins-SemiBold',
-    color: Colors.PRIMARY,
-    marginBottom: 10,
-  },
-  badgeImage: {
-    width: screenWidth * 0.25,
-    height: screenWidth * 0.25,
-    borderRadius: screenWidth * 0.125,
-    borderWidth: 2,
-    borderColor: Colors.PRIMARY,
-  },
   shareButton: {
     marginTop: 20,
     paddingVertical: 12,
@@ -152,6 +192,15 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: screenWidth * 0.04,
     fontFamily: 'Poppins-Medium',
+  },
+  icon: {
+    marginBottom: 20,
+  },
+  noDataText: {
+    fontSize: screenWidth * 0.04,
+    fontFamily: 'Poppins-Medium',
+    color: Colors.SECONDARY,
+    textAlign: 'center',
   },
 });
 
