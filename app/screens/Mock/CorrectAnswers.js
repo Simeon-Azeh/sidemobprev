@@ -9,22 +9,18 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function CorrectAnswersScreen({ route }) {
     const navigation = useNavigation();
-    const { score, totalQuestions } = route.params;
+    const { questions } = route.params;
 
-    const questions = [
-        {
-            question: "What is the capital of France?",
-            correctAnswer: "Paris",
-        },
-        {
-            question: "Explain the theory of relativity in brief.",
-            correctAnswer: "Relativity is a theory by Albert Einstein that describes the interrelation of space and time.",
-        },
-        {
-            question: "Which of the following are programming languages?",
-            correctAnswer: "Java, Python, JavaScript",
-        },
-    ];
+    if (!questions) {
+        return (
+            <View style={styles.container}>
+                <Text style={styles.errorText}>No questions available.</Text>
+                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                    <Ionicons name="chevron-back" size={32} color={Colors.PRIMARY} />
+                </TouchableOpacity>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -41,7 +37,7 @@ export default function CorrectAnswersScreen({ route }) {
                         <View key={index} style={styles.questionContainer}>
                             <Text style={styles.question}>{index + 1}. {item.question}</Text>
                             <Text style={styles.correctAnswerTitle}>Correct Answer:</Text>
-                            <Text style={styles.correctAnswer}>{item.correctAnswer}</Text>
+                            <Text style={styles.correctAnswer}>{item.answer}</Text>
                         </View>
                     ))}
                 </View>
@@ -138,5 +134,12 @@ const styles = StyleSheet.create({
         fontSize: screenWidth * 0.035,
         fontFamily: 'Poppins-Medium',
         color: Colors.WHITE,
+    },
+    errorText: {
+        fontSize: screenWidth * 0.05,
+        fontFamily: 'Poppins-Medium',
+        color: Colors.SECONDARY,
+        textAlign: 'center',
+        marginTop: 20,
     },
 });

@@ -219,6 +219,7 @@ export default function QuizScreen() {
             totalQuestions,
             coinsEarned,
             totalTime: timeSpent, // Pass the time spent to the results page
+            questions, // Pass the questions to the results page
         });
     
         setSubmitting(false);
