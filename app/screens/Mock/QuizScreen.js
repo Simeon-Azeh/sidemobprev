@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, Image, Dimensions,
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
 import DesignUi3 from '../../../assets/Images/DesignUi3.png';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { getFirestore, collection, addDoc, getDocs } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth } from 'firebase/auth';
@@ -23,92 +23,104 @@ export default function QuizScreen() {
     const [totalTime, setTotalTime] = useState(0);
     const [timeLeft, setTimeLeft] = useState(0);
 
-    useEffect(() => {
-        const fetchUserChoices = async () => {
-            try {
-                const userChoices = await AsyncStorage.getItem('userChoices');
-                if (userChoices) {
-                    const { subjects, difficulty, timePerQuestion, numQuestions } = JSON.parse(userChoices);
-                    const totalQuizTime = parseInt(timePerQuestion, 10) * parseInt(numQuestions, 10);
-                    setTotalTime(totalQuizTime);
-                    setTimeLeft(totalQuizTime);
-                    fetchQuestions(subjects, difficulty, numQuestions);
-                } else {
-                    console.error('No user choices found in local storage');
-                    setLoading(false);
-                }
-            } catch (error) {
-                console.error('Error fetching user choices from local storage:', error);
-                setLoading(false);
-            }
-        };
-
-        const fetchQuestions = async (subjects, difficulty, numQuestions) => {
+    useFocusEffect(
+        React.useCallback(() => {
+            // Reset state when the screen gains focus
+            setQuestions([]);
             setLoading(true);
-            try {
-                const db = getFirestore();
-                let fetchedQuestions = [];
+            setSubmitting(false);
+            setSelectedAnswers({});
+            setCurrentQuestionIndex(0);
+            setTotalTime(0);
+            setTimeLeft(0);
 
-                for (const subject of subjects) {
-                    console.log(`Fetching questions for subject: ${subject}, difficulty: ${difficulty}`);
-                    const subjectDoc = await getDocs(collection(db, 'quizzes'));
+            fetchUserChoices();
 
-                    subjectDoc.forEach(doc => {
-                        const subjectData = doc.data();
-                        console.log(`Document data for subject ${subject}:`, subjectData);
-                        if (subjectData.subjects && subjectData.subjects[subject] && subjectData.subjects[subject][difficulty]) {
-                            const questionsList = subjectData.subjects[subject][difficulty];
-                            if (Array.isArray(questionsList)) {
-                                questionsList.forEach(question => {
-                                    if (question.question && question.options && question.answer) {
-                                        fetchedQuestions.push({
-                                            id: `${subject}_${fetchedQuestions.length}`,
-                                            ...question
-                                        });
-                                    }
-                                });
-                            }
+            // Start the timer
+            timerRef.current = setInterval(() => {
+                setTimeLeft(prevTime => {
+                    if (prevTime > 0) {
+                        if (prevTime === 10) {
+                            Alert.alert("Warning", "Only 10 seconds left!");
                         }
-                    });
-                }
+                        return prevTime - 1;
+                    } else {
+                        clearInterval(timerRef.current);
+                        return 0;
+                    }
+                });
+            }, 1000);
 
-                console.log('Fetched Questions:', fetchedQuestions);
+            return () => {
+                clearInterval(timerRef.current);
+            };
+        }, [])
+    );
 
-                if (fetchedQuestions.length > 0) {
-                    const shuffledQuestions = fetchedQuestions
-                        .sort(() => 0.5 - Math.random())
-                        .slice(0, parseInt(numQuestions, 10));
-                    setQuestions(shuffledQuestions);
-                } else {
-                    console.error('No questions found for the selected criteria');
-                }
-            } catch (error) {
-                console.error("Error fetching questions:", error);
-            } finally {
+    const fetchUserChoices = async () => {
+        try {
+            const userChoices = await AsyncStorage.getItem('userChoices');
+            if (userChoices) {
+                const { subjects, difficulty, timePerQuestion, numQuestions } = JSON.parse(userChoices);
+                const totalQuizTime = parseInt(timePerQuestion, 10) * parseInt(numQuestions, 10);
+                setTotalTime(totalQuizTime);
+                setTimeLeft(totalQuizTime);
+                fetchQuestions(subjects, difficulty, numQuestions);
+            } else {
+                console.error('No user choices found in local storage');
                 setLoading(false);
             }
-        };
+        } catch (error) {
+            console.error('Error fetching user choices from local storage:', error);
+            setLoading(false);
+        }
+    };
 
-        fetchUserChoices();
-    }, []);
+    const fetchQuestions = async (subjects, difficulty, numQuestions) => {
+        setLoading(true);
+        try {
+            const db = getFirestore();
+            let fetchedQuestions = [];
 
-    useEffect(() => {
-        timerRef.current = setInterval(() => {
-            setTimeLeft(prevTime => {
-                if (prevTime > 0) {
-                    if (prevTime === 10) {
-                        Alert.alert("Warning", "Only 10 seconds left!");
+            for (const subject of subjects) {
+                console.log(`Fetching questions for subject: ${subject}, difficulty: ${difficulty}`);
+                const subjectDoc = await getDocs(collection(db, 'quizzes'));
+
+                subjectDoc.forEach(doc => {
+                    const subjectData = doc.data();
+                    console.log(`Document data for subject ${subject}:`, subjectData);
+                    if (subjectData.subjects && subjectData.subjects[subject] && subjectData.subjects[subject][difficulty]) {
+                        const questionsList = subjectData.subjects[subject][difficulty];
+                        if (Array.isArray(questionsList)) {
+                            questionsList.forEach(question => {
+                                if (question.question && question.options && question.answer) {
+                                    fetchedQuestions.push({
+                                        id: `${subject}_${fetchedQuestions.length}`,
+                                        ...question
+                                    });
+                                }
+                            });
+                        }
                     }
-                    return prevTime - 1;
-                } else {
-                    clearInterval(timerRef.current);
-                    return 0;
-                }
-            });
-        }, 1000);
+                });
+            }
 
-        return () => clearInterval(timerRef.current);
-    }, []);
+            console.log('Fetched Questions:', fetchedQuestions);
+
+            if (fetchedQuestions.length > 0) {
+                const shuffledQuestions = fetchedQuestions
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, parseInt(numQuestions, 10));
+                setQuestions(shuffledQuestions);
+            } else {
+                console.error('No questions found for the selected criteria');
+            }
+        } catch (error) {
+            console.error("Error fetching questions:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleOptionSelect = (questionId, option) => {
         setSelectedAnswers(prev => ({
@@ -164,16 +176,11 @@ export default function QuizScreen() {
                 if (allCorrect) {
                     score += 1;
                 }
-            } else {
-                score -= 1; // Deduct a point for each failed question
             }
         });
 
         const totalQuestions = questions.length;
-        const coinsEarned = Math.max(0, score * 10); // Ensure coinsEarned is not negative
-        const extraMinutes = Math.ceil((totalTime - timeLeft) / 60);
-        const penalty = extraMinutes * 5;
-        const finalScore = Math.max(0, score - penalty); // Ensure finalScore is not negative
+        const coinsEarned = score * 10; // Coins earned based on the score
         const timeSpent = totalTime - timeLeft; // Calculate the time spent
 
         const db = getFirestore();
@@ -185,7 +192,7 @@ export default function QuizScreen() {
         try {
             await addDoc(collection(db, 'quizResults'), {
                 userId: user.uid,
-                score: finalScore,
+                score: score, // Use the raw score without penalties
                 totalQuestions,
                 coinsEarned,
                 totalTime: timeSpent, // Save the time spent
@@ -199,7 +206,7 @@ export default function QuizScreen() {
         }
 
         navigation.navigate('QuizResults', {
-            score: finalScore,
+            score: score, // Pass the raw score to the results page
             totalQuestions,
             coinsEarned,
             totalTime: timeSpent, // Pass the time spent to the results page
