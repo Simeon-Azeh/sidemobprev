@@ -24,10 +24,13 @@ export default function QuizResults({ route }) {
       </TouchableOpacity>
 
       <View style={styles.content}>
-        <Image source={CelebrationImage} style={styles.image} />
+        <Image source={CelebrationImage} style={styles.image} resizeMode="contain" />
         <Text style={styles.scoreMessage}>{scoreMessage}</Text>
         <Text style={styles.scoreText}>You scored {score} out of {totalQuestions}!</Text>
-        <Text style={styles.coinsText}>+ <FontAwesome6 name="coins" size={18} color={Colors.PRIMARY} /> {coinsEarned}</Text>
+        <View style={styles.coinsContainer}>
+          <FontAwesome6 name="coins" size={18} color={Colors.PRIMARY} />
+          <Text style={styles.coinsText}>+ {coinsEarned}</Text>
+        </View>
         <Text style={styles.timeText}>Time Taken: {totalTime} seconds</Text>
 
         <View style={styles.buttonContainer}>
@@ -46,13 +49,21 @@ export default function QuizResults({ route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f9f9f9',
   },
   backButton: {
     position: 'absolute',
-    top: 60,
+    top: 50,
     left: 20,
     zIndex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 8,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   content: {
     flex: 1,
@@ -61,67 +72,87 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   image: {
-    width: screenWidth * 0.8,
-    height: screenHeight * 0.4,
+    width: screenWidth * 0.7,
+    height: screenHeight * 0.35,
     marginBottom: 20,
   },
   scoreMessage: {
-    fontSize: screenWidth * 0.06,
-    fontFamily: 'Poppins-Medium',
+    fontSize: screenWidth * 0.07,
+    fontFamily: 'Poppins-Bold',
     color: Colors.PRIMARY,
     marginBottom: 10,
+    textAlign: 'center',
   },
   scoreText: {
     fontSize: screenWidth * 0.05,
     fontFamily: 'Poppins-Medium',
     color: Colors.SECONDARY,
     marginBottom: 20,
+    textAlign: 'center',
   },
-  coinsText: {
-    fontSize: screenWidth * 0.04,
-    fontFamily: 'Poppins-Medium',
-    color: Colors.PRIMARY,
+  coinsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 10,
+    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: Colors.PRIMARY,
-    borderRadius: 50,
-    padding: 5,
-    textAlign: 'center',
-    alignSelf: 'center',
-    width: '20%',
+    borderRadius: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  coinsText: {
+    fontSize: screenWidth * 0.045,
+    fontFamily: 'Poppins-Medium',
+    color: Colors.PRIMARY,
+    marginLeft: 5,
   },
   timeText: {
     fontSize: screenWidth * 0.04,
     fontFamily: 'Poppins-Medium',
     color: Colors.SECONDARY,
     marginBottom: 20,
+    textAlign: 'center',
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     width: '100%',
+    marginTop: 20,
   },
   correctAnswersButton: {
-    backgroundColor: Colors.WHITE,
+    backgroundColor: '#fff',
     paddingVertical: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     width: '45%',
     borderWidth: 1,
     borderColor: Colors.PRIMARY,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   retakeQuizButton: {
     backgroundColor: Colors.PRIMARY,
     paddingVertical: 15,
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     width: '45%',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   buttonText: {
-    fontSize: screenWidth * 0.03,
+    fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins-Medium',
     color: '#fff',
+    textAlign: 'center',
   },
 });
