@@ -12,13 +12,23 @@ import { auth, storage, firestore } from '../../../firebaseConfig';
 export default function InputSection({ message, setMessage, handleSend, handleFileAttachment, setShowEmojiPicker, chatType }) {
   const [attachedFile, setAttachedFile] = useState(null);
 
-  const handleSendMessage = () => {
-    if (chatType === 'group') {
-      handleSend('group');
+  const handleSendMessage = async () => {
+    if (attachedFile) {
+      const user = auth.currentUser;
+      const chatId = chatType === 'group' ? 'groupChatId' : 'individualChatId'; // Replace with actual chat ID logic
+      const messagesRef = collection(firestore, 'chats', chatId, 'messages');
+      await addDoc(messagesRef, {
+        text: '',
+        fileUrl: attachedFile.downloadURL,
+        fileName: attachedFile.name,
+        sentByUser: user.email,
+        timestamp: Timestamp.now(),
+        unread: true,
+      });
+      setAttachedFile(null); // Clear the attached file after sending the message
     } else {
-      handleSend('individual');
+      handleSend(chatType === 'group' ? 'group' : 'individual');
     }
-    setAttachedFile(null); // Clear the attached file after sending the message
   };
 
   const handleFilePicker = async () => {
@@ -37,7 +47,9 @@ export default function InputSection({ message, setMessage, handleSend, handleFi
         await uploadBytes(storageRef, blob);
         const downloadURL = await getDownloadURL(storageRef);
 
-        // Add file reference to Firestore messages
+        setAttachedFile({ name, downloadURL });
+
+        // Add file reference to Firestore immediately
         const chatId = chatType === 'group' ? 'groupChatId' : 'individualChatId'; // Replace with actual chat ID logic
         const messagesRef = collection(firestore, 'chats', chatId, 'messages');
         await addDoc(messagesRef, {
@@ -49,7 +61,6 @@ export default function InputSection({ message, setMessage, handleSend, handleFi
           unread: true,
         });
 
-        setAttachedFile({ name, downloadURL });
         Alert.alert('Success', 'File uploaded successfully!');
       }
     } catch (error) {
@@ -60,40 +71,40 @@ export default function InputSection({ message, setMessage, handleSend, handleFi
 
   return (
     <View style={styles.inputContainer}>
-      <TouchableOpacity
-        style={styles.iconButton}
-        onPress={() => setShowEmojiPicker(prev => !prev)}
-      >
-        <Alticon name="emoji-happy" size={25} color={Colors.SECONDARY} />
-      </TouchableOpacity>
-      <TextInput
-        placeholder="Type a message..."
-        value={message}
-        onChangeText={setMessage}
-        style={styles.textInput}
-        multiline
-        blurOnSubmit={false}
-      />
       {attachedFile && (
         <View style={styles.attachmentContainer}>
           <MaterialIcons name="attachment" size={25} color={Colors.SECONDARY} />
           <Text style={styles.attachmentText}>{attachedFile.name}</Text>
         </View>
       )}
-      <TouchableOpacity style={styles.iconButton} onPress={handleFilePicker}>
-        <MaterialIcons name="attach-file" size={25} color={Colors.SECONDARY} />
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
-        <Icon name="send" size={25} color="#fff" />
-      </TouchableOpacity>
+      <View style={styles.inputRow}>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => setShowEmojiPicker(prev => !prev)}
+        >
+          <Alticon name="emoji-happy" size={25} color={Colors.SECONDARY} />
+        </TouchableOpacity>
+        <TextInput
+          placeholder="Type a message..."
+          value={message}
+          onChangeText={setMessage}
+          style={styles.textInput}
+          multiline
+          blurOnSubmit={false}
+        />
+        <TouchableOpacity style={styles.iconButton} onPress={handleFilePicker}>
+          <MaterialIcons name="attach-file" size={25} color={Colors.SECONDARY} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
+          <Icon name="send" size={25} color="#fff" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
     padding: 5,
     backgroundColor: '#fff',
     borderTopWidth: 1,
@@ -102,6 +113,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   iconButton: {
     padding: 10,
@@ -128,7 +143,7 @@ const styles = StyleSheet.create({
   attachmentContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 5,
+    marginBottom: 5,
   },
   attachmentText: {
     marginLeft: 5,

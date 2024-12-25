@@ -129,7 +129,9 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Header />
+      <View style={{ zIndex: 1000 }}>
+        <Header />
+      </View>
       <ScrollView nestedScrollEnabled={true}>
         <View style={{ paddingHorizontal: 15, marginVertical: 15 }}>
           <GreetingCard />

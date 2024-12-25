@@ -3,7 +3,7 @@ import { View, Text, Dimensions, Image, StyleSheet, TouchableOpacity } from 'rea
 import Carousel from 'react-native-snap-carousel';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
-import { useNavigation  } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -22,47 +22,46 @@ const TutorCategoryCarousel = ({ title, tutors }) => {
   const itemWidth = screenWidth * 0.7;
 
   const renderItem = ({ item, index }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('TutorDetails')}>
-       <View style={styles.cardContainer}>
-      <Image
-        source={{ uri: item.image }}
-        style={styles.tutorImage}
-        resizeMode="cover"
-      />
-      <TouchableOpacity 
-        style={styles.favoriteButton}
-        onPress={() => toggleFavorite(index)}
-      >
-        <MaterialIcons 
-          name={favorites[index] ? 'favorite' : 'favorite-border'} 
-          size={24} 
-          color={favorites[index] ? '#9835FF' : '#888'} 
+    <TouchableOpacity onPress={() => navigation.navigate('TutorDetails', { tutorId: item.id })}>
+      <View style={styles.cardContainer}>
+        <Image
+          source={{ uri: item.image }}
+          style={styles.tutorImage}
+          resizeMode="cover"
         />
-      </TouchableOpacity>
-      <View style={styles.infoContainer}>
-        <View style={styles.headerContainer}>
-          <Text style={styles.tutorName}>{item.name}</Text>
-          {item.verified && (
-            <MaterialCommunityIcons 
-              name="check-circle" 
-              size={18} 
-              color="#9835ff" 
-              style={styles.verifiedIcon}
-            />
-          )}
-        </View>
-        <Text style={styles.subjects}>{item.subjects.join(', ')}</Text>
-        <View style={styles.levelContainer}>
-          <Text style={styles.levelText}>{item.level}</Text>
-        </View>
-        <View style={styles.ratingContainer}>
-          <MaterialIcons name="star" size={18} color="#f1c40f" />
-          <Text style={styles.ratingText}>{item.ratings} ({item.reviews} reviews)</Text>
+        <TouchableOpacity 
+          style={styles.favoriteButton}
+          onPress={() => toggleFavorite(item.id)}
+        >
+          <MaterialIcons 
+            name={favorites[item.id] ? 'favorite' : 'favorite-border'} 
+            size={24} 
+            color={favorites[item.id] ? '#9835FF' : '#888'} 
+          />
+        </TouchableOpacity>
+        <View style={styles.infoContainer}>
+          <View style={styles.headerContainer}>
+            <Text style={styles.tutorName}>{item.name}</Text>
+            {item.verified && (
+              <MaterialCommunityIcons 
+                name="check-circle" 
+                size={18} 
+                color="#9835ff" 
+                style={styles.verifiedIcon}
+              />
+            )}
+          </View>
+          <Text style={styles.subjects}>{item.subjects.join(', ')}</Text>
+          <View style={styles.levelContainer}>
+            <Text style={styles.levelText}>{item.level}</Text>
+          </View>
+          <View style={styles.ratingContainer}>
+            <MaterialIcons name="star" size={18} color="#f1c40f" />
+            <Text style={styles.ratingText}>{item.ratings} ({item.reviews} reviews)</Text>
+          </View>
         </View>
       </View>
-    </View>
     </TouchableOpacity>
-   
   );
 
   return (
@@ -114,7 +113,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-   gap: 5,
+    gap: 5,
     marginBottom: 5,
   },
   tutorName: {
@@ -125,7 +124,6 @@ const styles = StyleSheet.create({
   verifiedIcon: {
     marginLeft: 2,
     marginTop: -4,
-
   },
   subjects: {
     fontSize: screenWidth * 0.03,

@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, ActivityIndicator, Dimensions } from 'react-native';
 import { useFonts } from 'expo-font';
@@ -7,6 +7,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import LoadingScreen from './app/components/landing/Loading';
 import WelcomeScreen from './app/screens/landing/Welcome';
 import RegisterScreen from './app/screens/Authentication/Register';
@@ -160,17 +161,26 @@ export default function App() {
   });
 
   const [initialRoute, setInitialRoute] = React.useState('LoadingScreen');
+  const [loading, setLoading] = React.useState(true);
+  const [user, setUser] = React.useState(null);
 
   React.useEffect(() => {
-    const checkOnboardingStatus = async () => {
-      const hasSeenOnboarding = await AsyncStorage.getItem('hasSeenOnboarding');
-      setInitialRoute(hasSeenOnboarding ? 'Welcome' : 'Login');
-    };
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+        setInitialRoute('Drawer');
+      } else {
+        setUser(null);
+        setInitialRoute('Login');
+      }
+      setLoading(false);
+    });
 
-    checkOnboardingStatus();
+    return () => unsubscribe();
   }, []);
 
-  if (!fontsLoaded || initialRoute === 'LoadingScreen') {
+  if (!fontsLoaded || loading) {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color="#0000ff" />

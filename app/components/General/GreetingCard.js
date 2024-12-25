@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Colors from '../../../assets/Utils/Colors';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { auth } from '../../../firebaseConfig';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -11,25 +12,30 @@ export default function GreetingCard() {
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
-    const fetchUserName = async () => {
-      try {
-        const user = auth.currentUser;
-        if (user) {
-          const userDoc = await getDoc(doc(getFirestore(), 'users', user.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            setUserName(userData.firstName || user.email);
-          } else {
-            setUserName(user.email);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        fetchUserName(user.uid);
+      } else {
+        setUserName('');
       }
-    };
+    });
 
-    fetchUserName();
+    return () => unsubscribe();
   }, []);
+
+  const fetchUserName = async (userId) => {
+    try {
+      const userDoc = await getDoc(doc(getFirestore(), 'users', userId));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setUserName(userData.firstName || auth.currentUser.email);
+      } else {
+        setUserName(auth.currentUser.email);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
 
   const getGreeting = () => {
     const currentHour = new Date().getHours();
@@ -48,7 +54,6 @@ export default function GreetingCard() {
       <Text style={{ fontFamily: 'Poppins-Medium', fontSize: screenWidth * 0.05, color: Colors.PRIMARY }}>
         {userName} <MaterialIcons name="waving-hand" size={18} color={Colors.SECONDARY} />
       </Text>
-      
     </View>
   );
 }

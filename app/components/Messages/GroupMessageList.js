@@ -42,7 +42,7 @@ export default function GroupMessageList({ messages, handleDeleteMessage, handle
   }, [messages, currentUser.email]);
 
   const formatDate = (timestamp) => {
-    if (!timestamp) return 'Unknown date';
+    if (!timestamp) return '';
     const date = new Date(timestamp);
     const today = new Date();
     const yesterday = new Date(today);
@@ -114,22 +114,25 @@ export default function GroupMessageList({ messages, handleDeleteMessage, handle
               : { borderTopLeftRadius: 0, borderBottomLeftRadius: 18 },
           ]}
         >
-          <Text
-            style={[
-              styles.messageText,
-              isSentByCurrentUser ? styles.userMessageText : styles.receivedMessageText,
-            ]}
-          >
-            {messageText}
-          </Text>
-          <Text
-            style={[
-              styles.messageTimeInBubble,
-              isSentByCurrentUser ? styles.userMessageTimeInBubble : styles.receivedMessageTimeInBubble,
-            ]}
-          >
-            {item.timestamp ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Unknown time'}
-          </Text>
+          <View style={styles.messageContentRow}>
+            <Text
+              style={[
+                styles.messageText,
+                isSentByCurrentUser ? styles.userMessageText : styles.receivedMessageText,
+              ]}
+            >
+              {messageText}
+            </Text>
+            <View style={{ width: 8 }} />
+            <Text
+              style={[
+                styles.messageTime,
+                isSentByCurrentUser ? styles.userMessageTime : styles.receivedMessageTime,
+              ]}
+            >
+              {item.timestamp ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+            </Text>
+          </View>
         </TouchableOpacity>
         <View style={styles.messageFooter}>
           {renderCheckMarks()}
@@ -140,7 +143,9 @@ export default function GroupMessageList({ messages, handleDeleteMessage, handle
 
   const renderSectionHeader = ({ section: { title } }) => (
     <View style={styles.sectionHeader}>
+      <View style={styles.line} />
       <Text style={styles.sectionHeaderText}>{title}</Text>
+      <View style={styles.line} />
     </View>
   );
 
@@ -165,41 +170,31 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   sectionHeader: {
-    backgroundColor: '#f0f0f0',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 5,
     paddingHorizontal: 10,
-    alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 15,
+    marginTop: 10,
   },
   sectionHeaderText: {
     fontSize: 14,
     color: '#555',
     fontFamily: 'Poppins-Medium',
     textAlign: 'center',
+    marginHorizontal: 10,
+  },
+  line: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#ccc',
   },
   messageContainer: {
-    marginVertical: 5,
-   
-    flexDirection: 'column',
+    marginVertical: 2,
+    flexDirection: 'column', // Changed to column to stack name on top of message
     alignItems: 'flex-start',
     maxWidth: '100%',
     paddingHorizontal: 12,
-  },
-  senderInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 5,
-  },
-  senderAvatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    marginRight: 5,
-  },
-  senderName: {
-    fontFamily: 'Poppins-Medium',
-    fontSize: 12,
-    color: '#444',
   },
   messageBubble: {
     padding: 12,
@@ -232,6 +227,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
+  messageContentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
   messageText: {
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins-Medium',
@@ -250,29 +250,33 @@ const styles = StyleSheet.create({
   },
   messageTime: {
     fontSize: 9,
-    color: '#888',
-    marginHorizontal: 5,
+    marginRight: 8,
     fontFamily: 'Poppins',
-  },
-  userMessageTime: {
-    alignSelf: 'flex-end',
-  },
-  receivedMessageTime: {
-    alignSelf: 'flex-start',
-  },
-  messageTimeInBubble: {
-    fontSize: 9,
     marginTop: 5,
   },
-  userMessageTimeInBubble: {
+  userMessageTime: {
     color: '#fff',
-    alignSelf: 'flex-end',
   },
-  receivedMessageTimeInBubble: {
+  receivedMessageTime: {
     color: '#888',
-    alignSelf: 'flex-start',
   },
   checkMarks: {
     marginLeft: 5,
+  },
+  senderInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  senderAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: 5,
+  },
+  senderName: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 12,
+    color: '#444',
   },
 });

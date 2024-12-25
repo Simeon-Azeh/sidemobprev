@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, Modal, TouchableOpacity, Dimensions, ScrollView, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import Header from '../../components/General/Header';
 import LeaderboardImg from '../../../assets/Images/LeaderboardImg.png';
 import Colors from '../../../assets/Utils/Colors';
@@ -8,6 +9,7 @@ import { Calendar } from 'react-native-calendars';
 import UpcomingTasks from '../../components/Discover/UpcomingTasks';
 import { useNavigation } from '@react-navigation/native';
 import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -16,51 +18,59 @@ export default function Discover() {
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+
+  const fetchLeaderboardData = async () => {
+    setLoadingLeaderboard(true);
+    const db = getFirestore();
+    const usersPoints = {};
+
+    try {
+      const querySnapshot = await getDocs(collection(db, 'quizResults'));
+      querySnapshot.forEach(doc => {
+        const data = doc.data();
+        const userId = data.userId;
+        const coinsEarned = data.coinsEarned;
+
+        if (usersPoints[userId]) {
+          usersPoints[userId] += coinsEarned;
+        } else {
+          usersPoints[userId] = coinsEarned;
+        }
+      });
+
+      const usersData = await Promise.all(
+        Object.keys(usersPoints).map(async userId => {
+          const userDoc = await getDoc(doc(db, 'users', userId));
+          const userData = userDoc.data();
+          return {
+            id: userId,
+            name: userData.firstName,
+            coins: usersPoints[userId],
+            profileImage: userData.avatar,
+            status: 'up', // Placeholder status
+          };
+        })
+      );
+
+      usersData.sort((a, b) => b.coins - a.coins);
+      setLeaderboardData(usersData); // All users sorted by points
+    } catch (error) {
+      console.error('Error fetching leaderboard data:', error);
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchLeaderboardData = async () => {
-      setLoadingLeaderboard(true);
-      const db = getFirestore();
-      const usersPoints = {};
-
-      try {
-        const querySnapshot = await getDocs(collection(db, 'quizResults'));
-        querySnapshot.forEach(doc => {
-          const data = doc.data();
-          const userId = data.userId;
-          const coinsEarned = data.coinsEarned;
-
-          if (usersPoints[userId]) {
-            usersPoints[userId] += coinsEarned;
-          } else {
-            usersPoints[userId] = coinsEarned;
-          }
-        });
-
-        const usersData = await Promise.all(
-          Object.keys(usersPoints).map(async userId => {
-            const userDoc = await getDoc(doc(db, 'users', userId));
-            const userData = userDoc.data();
-            return {
-              id: userId,
-              name: userData.firstName,
-              coins: usersPoints[userId],
-              profileImage: userData.avatar,
-              status: 'up', // Placeholder status
-            };
-          })
-        );
-
-        usersData.sort((a, b) => b.coins - a.coins);
-        setLeaderboardData(usersData); // All users sorted by points
-      } catch (error) {
-        console.error('Error fetching leaderboard data:', error);
-      } finally {
-        setLoadingLeaderboard(false);
-      }
-    };
-
     fetchLeaderboardData();
+
+    const interval = setInterval(() => {
+      fetchLeaderboardData();
+    }, 30 * 60 * 1000); // 30 minutes
+
+    return () => clearInterval(interval); // Cleanup interval on component unmount
   }, []);
 
   return (
@@ -86,7 +96,12 @@ export default function Discover() {
                 ]}
               >
                 <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
-                <Text style={styles.username}>{user.name}</Text>
+                <Text style={styles.username}>
+                  {user.name}
+                  {currentUser && currentUser.uid === user.id && (
+                    <Ionicons name="sparkles-sharp" size={16} color="#9835ff" style={styles.currentUserIcon} />
+                  )}
+                </Text>
                 <View style={styles.coinContainer}>
                   <Icon name="coins" size={16} color="#9835ff" />
                   <Text style={styles.coins}>+{user.coins}</Text>
@@ -106,7 +121,12 @@ export default function Discover() {
           {leaderboardData.slice(3).map((user) => (
             <View key={user.id} style={styles.otherUserItem}>
               <Image source={{ uri: user.profileImage }} style={styles.profileImageSmall} />
-              <Text style={styles.usernameSmall}>{user.name}</Text>
+              <Text style={styles.usernameSmall}>
+                {user.name}
+                {currentUser && currentUser.uid === user.id && (
+                  <Ionicons name="sparkles-sharp" size={24} color="black" style={styles.currentUserIconSmall} />
+                )}
+              </Text>
               <View style={styles.coinContainerSmall}>
                 <Icon name="coins" size={16} color="#9835ff" />
                 <Text style={styles.coinsSmall}>+{user.coins}</Text>
@@ -141,8 +161,6 @@ export default function Discover() {
             </View>
           </View>
         </Modal>
-
-      
 
         <View style={styles.calendarContainer}>
           <Calendar
@@ -201,6 +219,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
     color: Colors.SECONDARY,
   },
+  currentUserIcon: {
+    marginLeft: 5,
+  },
   coinContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -234,6 +255,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     marginLeft: 10,
     color: Colors.SECONDARY,
+  },
+  currentUserIconSmall: {
+    marginLeft: 5,
   },
   coinContainerSmall: {
     flexDirection: 'row',

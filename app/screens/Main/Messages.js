@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, Alert, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, ActivityIndicator, Image } from 'react-native';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -13,8 +13,12 @@ import { getAuth } from 'firebase/auth';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const PeopleTab = ({ users }) => {
+const PeopleTab = ({ users, loading }) => {
   const navigation = useNavigation();
+
+  if (loading) {
+    return <ActivityIndicator size="large" color={Colors.PRIMARY} style={styles.loadingIndicator} />;
+  }
 
   return (
     <FlatList
@@ -28,8 +32,12 @@ const PeopleTab = ({ users }) => {
   );
 };
 
-const GroupsTab = ({ groups }) => {
+const GroupsTab = ({ groups, loading }) => {
   const navigation = useNavigation();
+
+  if (loading) {
+    return <ActivityIndicator size="large" color={Colors.PRIMARY} style={styles.loadingIndicator} />;
+  }
 
   return (
     <FlatList
@@ -62,6 +70,7 @@ export default function Messages() {
   const [groups, setGroups] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -80,11 +89,18 @@ export default function Messages() {
             time: data.lastMessageTime ? new Date(data.lastMessageTime.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
             message: data.lastMessage || 'Select chat to start messaging',
             email: data.email,
+            lastMessageTime: data.lastMessageTime ? new Date(data.lastMessageTime.seconds * 1000) : null,
           };
         }).filter(user => user.email !== currentUser.email); // Filter out the authenticated user
+
+        // Sort users by lastMessageTime in descending order
+        usersData.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+
         setUsers(usersData);
       } catch (error) {
         console.error("Error fetching users:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -102,6 +118,8 @@ export default function Messages() {
         setGroups(groupsData);
       } catch (error) {
         console.error("Error fetching groups:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -119,8 +137,8 @@ export default function Messages() {
   );
 
   const renderScene = SceneMap({
-    chats: () => <PeopleTab users={filteredUsers} />,
-    groups: () => <GroupsTab groups={filteredGroups} />,
+    chats: () => <PeopleTab users={filteredUsers} loading={loading} />,
+    groups: () => <GroupsTab groups={filteredGroups} loading={loading} />,
   });
 
   const handleAddNewChat = () => {
@@ -236,5 +254,10 @@ const styles = StyleSheet.create({
   groupDescription: {
     fontFamily: 'Poppins',
     color: '#888',
+  },
+  loadingIndicator: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

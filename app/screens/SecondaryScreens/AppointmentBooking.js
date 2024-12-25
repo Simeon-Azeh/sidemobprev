@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, Platform, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, FlatList, Image, StyleSheet } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
-
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const AppointmentBooking = ({ tutor }) => {
+
+const AppointmentBooking = () => {
+  const [tutors, setTutors] = useState([]);
+  const [filteredTutors, setFilteredTutors] = useState([]);
+  const [selectedTutor, setSelectedTutor] = useState(null);
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
   const [bookingType, setBookingType] = useState('online');
@@ -15,38 +20,48 @@ const AppointmentBooking = ({ tutor }) => {
   const [selectedTime, setSelectedTime] = useState(null);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [selectedLevel, setSelectedLevel] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('');
+
+  const [timeSlots, setTimeSlots] = useState([
+    { time: '09:00 AM', booked: false },
+    { time: '10:00 AM', booked: false },
+    { time: '11:00 AM', booked: false },
+    { time: '12:00 PM', booked: false },
+    { time: '01:00 PM', booked: false },
+    { time: '02:00 PM', booked: false },
+    { time: '03:00 PM', booked: false },
+    { time: '04:00 PM', booked: false },
+  ]);
+
+  const HoursDaily = [
+    { hour: '1 hour', booked: false },
+    { hour: '2 hours', booked: false },
+    { hour: '3 hours', booked: false },
+    { hour: '4 hours', booked: false },
+    { hour: '5 hours', booked: false },
+    { hour: '6 hours', booked: false },
+    { hour: '7 hours', booked: false },
+    { hour: '8 hours', booked: false },
+  ];
 
   const hourlyRate = 20; // Example hourly rate in XAF
   const numberOfDays = (endDate && startDate) ? Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) : 0;
   const dailyHours = parseInt(selectedHours, 10);
   const totalPrice = dailyHours * hourlyRate * numberOfDays;
 
-  const timeSlots = [
-    { time: '09:00 AM', booked: false },
-    { time: '10:00 AM', booked: false },
-    { time: '11:00 AM', booked: true },
-    { time: '12:00 PM', booked: false },
-    { time: '01:00 PM', booked: false },
-    { time: '02:00 PM', booked: true },
-    { time: '03:00 PM', booked: false },
-    { time: '04:00 PM', booked: false },
-  ];
-
-  const HoursDaily = [
-    { hour: '1 hour', booked: false },
-    { hour: '2 hours', booked: false },
-    { hour: '3 hours', booked: true },
-    { hour: '4 hours', booked: false },
-    { hour: '5 hours', booked: false },
-    { hour: '6 hours', booked: true },
-    { hour: '7 hours', booked: false },
-    { hour: '8 hours', booked: false },
-  ];
-
   useEffect(() => {
-    // Update the total price whenever the selectedHours or date range changes
-    setSelectedHours((prev) => prev || '1 hour');
-  }, [selectedHours, startDate, endDate]);
+    const fetchTutors = async () => {
+      const db = getFirestore();
+      const tutorsCollection = collection(db, 'tutors');
+      const tutorsSnapshot = await getDocs(tutorsCollection);
+      const tutorsList = tutorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setTutors(tutorsList);
+      setFilteredTutors(tutorsList);
+    };
+
+    fetchTutors();
+  }, []);
 
   const onDateChange = (event, selectedDate, isStartDate) => {
     const currentDate = selectedDate || new Date();
@@ -59,15 +74,80 @@ const AppointmentBooking = ({ tutor }) => {
     }
   };
 
+  const filterTutors = () => {
+    let filtered = tutors;
+    if (selectedLevel) {
+      filtered = filtered.filter(tutor => tutor.level === selectedLevel);
+    }
+    if (selectedSubject) {
+      filtered = filtered.filter(tutor => tutor.subjects.includes(selectedSubject));
+    }
+    setFilteredTutors(filtered);
+  };
+
+  const renderTutorItem = ({ item }) => (
+    <TouchableOpacity style={styles.tutorCard} onPress={() => setSelectedTutor(item)}>
+      <Image source={{ uri: item.image }} style={styles.tutorImage} />
+      <Text style={styles.tutorName}>{item.name}</Text>
+      <Text style={styles.tutorSubjects}>{item.subjects.join(', ')}</Text>
+      <Text style={styles.tutorLevel}>{item.level}</Text>
+    </TouchableOpacity>
+  );
+
+  if (!selectedTutor) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.heading}>Select a Tutor</Text>
+        <View style={styles.filterContainer}>
+          <Picker
+            selectedValue={selectedLevel}
+            style={styles.picker}
+            onValueChange={(itemValue) => setSelectedLevel(itemValue)}
+          >
+            <Picker.Item label="Select Level" value="" />
+            <Picker.Item label="OLEVEL" value="OLEVEL" />
+            <Picker.Item label="ALEVEL" value="ALEVEL" />
+          </Picker>
+          <Picker
+            selectedValue={selectedSubject}
+            style={styles.picker}
+            onValueChange={(itemValue) => setSelectedSubject(itemValue)}
+          >
+            <Picker.Item label="Select Subject" value="" />
+            <Picker.Item label="Mathematics" value="Mathematics" />
+            <Picker.Item label="Physics" value="Physics" />
+            <Picker.Item label="Chemistry" value="Chemistry" />
+            <Picker.Item label="Biology" value="Biology" />
+            <Picker.Item label="Art History" value="Art History" />
+            <Picker.Item label="Literature" value="Literature" />
+            <Picker.Item label="History" value="History" />
+            <Picker.Item label="Web Development" value="Web Development" />
+            <Picker.Item label="Computer Science" value="Computer Science" />
+          </Picker>
+          <TouchableOpacity style={styles.filterButton} onPress={filterTutors}>
+            <Text style={styles.filterButtonText}>Filter</Text>
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          data={filteredTutors}
+          renderItem={renderTutorItem}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.tutorList}
+        />
+      </View>
+    );
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.tutorInfo}>
         <View style={styles.imageContainer}>
-          <FontAwesome5 name="user-tie" size={120} color="#ccc" />
+          <Image source={{ uri: selectedTutor.image }} style={styles.tutorImage} />
         </View>
-        <Text style={styles.tutorName}>Tutor Name</Text>
-        <Text style={styles.tutorDescription}>Some description about this tutor, her bio and some basic info</Text>
-        <Text style={styles.tutorSubjects}>Chemistry, Biology</Text>
+        <Text style={styles.tutorName}>{selectedTutor.name}</Text>
+        <Text style={styles.tutorDescription}>{selectedTutor.description}</Text>
+        <Text style={styles.tutorSubjects}>{selectedTutor.subjects.join(', ')}</Text>
+        <Text style={styles.tutorLevel}>{selectedTutor.level}</Text>
         <View style={styles.iconsContainer}>
           <TouchableOpacity style={styles.icon}>
             <FontAwesome5 name="phone-alt" size={24} color="#9835ff" />
@@ -78,7 +158,7 @@ const AppointmentBooking = ({ tutor }) => {
         </View>
         <View style={styles.locationContainer}>
           <Ionicons name="location-outline" size={24} color="#ccc" />
-          <Text style={styles.locationText}>123 Anywhere st, Buea, Cameroon</Text>
+          <Text style={styles.locationText}>{selectedTutor.location}</Text>
         </View>
       </View>
 
@@ -181,11 +261,46 @@ const AppointmentBooking = ({ tutor }) => {
   );
 };
 
+
+
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 16,
     backgroundColor: '#fff',
+  },
+  tutorList: {
+    paddingBottom: 20,
+  },
+  tutorCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  tutorImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    marginBottom: 10,
+  },
+  tutorName: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Medium',
+    color: Colors.SECONDARY,
+    marginBottom: 5,
+  },
+  tutorSubjects: {
+    fontSize: 14,
+    color: '#888',
+    fontFamily: 'Poppins',
+    textAlign: 'center',
   },
   tutorInfo: {
     alignItems: 'center',
@@ -200,12 +315,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  tutorName: {
-    fontSize: screenWidth * 0.05,
-    fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
-    marginBottom: 8,
-  },
   tutorDescription: {
     fontSize: screenWidth * 0.03,
     color: '#7d7d7d',
@@ -213,12 +322,6 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontFamily: 'Poppins',
     marginBottom: 8,
-  },
-  tutorSubjects: {
-    fontSize: screenWidth * 0.04,
-    fontFamily: 'Poppins-Medium',
-    color: '#9835ff',
-    marginBottom: 16,
   },
   iconsContainer: {
     flexDirection: 'row',
@@ -242,7 +345,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontSize: screenWidth * 0.035,
-   fontFamily: 'Poppins-Medium',
+    fontFamily: 'Poppins-Medium',
     color: Colors.SECONDARY,
     marginBottom: 8,
   },

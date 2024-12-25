@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { Feather, MaterialIcons, FontAwesome5, FontAwesome6 } from '@expo/vector-icons';
-import Colors from '../../../assets/Utils/Colors';// Adjust this path as necessary
+import Colors from '../../../assets/Utils/Colors'; // Adjust this path as necessary
+import { getAuth, signOut } from 'firebase/auth';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -12,6 +13,12 @@ const CustomDrawerContent = ({ navigation }) => {
   const handlePress = (screen) => {
     setActiveScreen(screen);
     navigation.navigate(screen);
+  };
+
+  const handleLogout = async () => {
+    const auth = getAuth();
+    await signOut(auth);
+    navigation.navigate('Login');
   };
 
   const customDrawerItems = [
@@ -62,10 +69,7 @@ const CustomDrawerContent = ({ navigation }) => {
       </DrawerContentScrollView>
       {/* Logout Button */}
       <TouchableOpacity
-        onPress={() => {
-          setActiveScreen('Login');
-          navigation.navigate('Login');
-        }}
+        onPress={handleLogout}
         style={[styles.drawerItem, styles.logoutContainer]}
       >
         <View style={styles.iconContainer}>
@@ -115,7 +119,6 @@ const styles = StyleSheet.create({
     paddingVertical: 1,
     paddingHorizontal: 8,
     marginRight: screenWidth * 0.15,
-  
   },
   badgeText: {
     color: Colors.WHITE,
@@ -123,7 +126,6 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.025,
   },
   logoutContainer: {
-   
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
