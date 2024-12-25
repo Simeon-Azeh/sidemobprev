@@ -9,7 +9,7 @@ import ChatCard from '../../components/Messages/ChatCard';
 import GroupCreationModal from '../../components/Messages/GroupCreationModal';
 import { useNavigation } from '@react-navigation/native';
 import { getFirestore, collection, query, onSnapshot, getDocs } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -72,59 +72,69 @@ export default function Messages() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const auth = getAuth();
-        const currentUser = auth.currentUser;
-        const db = getFirestore();
-        const usersRef = collection(db, 'users');
-        const querySnapshot = await getDocs(usersRef);
-        const usersData = querySnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            name: `${data.firstName} ${data.lastName}`,
-            profileImage: data.avatar || 'default_avatar_url', // Ensure a default avatar URL if none is provided
-            time: data.lastMessageTime ? new Date(data.lastMessageTime.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-            message: data.lastMessage || 'Select chat to start messaging',
-            email: data.email,
-            lastMessageTime: data.lastMessageTime ? new Date(data.lastMessageTime.seconds * 1000) : null,
-          };
-        }).filter(user => user.email !== currentUser.email); // Filter out the authenticated user
-
-        // Sort users by lastMessageTime in descending order
-        usersData.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
-
-        setUsers(usersData);
-      } catch (error) {
-        console.error("Error fetching users:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const fetchGroups = async () => {
-      try {
-        const auth = getAuth();
-        const currentUser = auth.currentUser;
-        const db = getFirestore();
-        const groupsRef = collection(db, 'groups');
-        const querySnapshot = await getDocs(groupsRef);
-        const groupsData = querySnapshot.docs.map(doc => ({
+  const fetchUsers = async () => {
+    try {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      const db = getFirestore();
+      const usersRef = collection(db, 'users');
+      const querySnapshot = await getDocs(usersRef);
+      const usersData = querySnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
           id: doc.id,
-          ...doc.data(),
-        })).filter(group => group.visibility === 'public' || group.members.includes(currentUser.email) || group.createdBy === currentUser.email);
-        setGroups(groupsData);
-      } catch (error) {
-        console.error("Error fetching groups:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+          name: `${data.firstName} ${data.lastName}`,
+          profileImage: data.avatar || 'default_avatar_url', // Ensure a default avatar URL if none is provided
+          time: data.lastMessageTime ? new Date(data.lastMessageTime.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+          message: data.lastMessage || 'Select chat to start messaging',
+          email: data.email,
+          lastMessageTime: data.lastMessageTime ? new Date(data.lastMessageTime.seconds * 1000) : null,
+        };
+      }).filter(user => user.email !== currentUser.email); // Filter out the authenticated user
 
-    fetchUsers();
-    fetchGroups();
+      // Sort users by lastMessageTime in descending order
+      usersData.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+
+      setUsers(usersData);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchGroups = async () => {
+    try {
+      const auth = getAuth();
+      const currentUser = auth.currentUser;
+      const db = getFirestore();
+      const groupsRef = collection(db, 'groups');
+      const querySnapshot = await getDocs(groupsRef);
+      const groupsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      })).filter(group => group.visibility === 'public' || group.members.includes(currentUser.email) || group.createdBy === currentUser.email);
+      setGroups(groupsData);
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in, fetch data
+        setLoading(true);
+        fetchUsers();
+        fetchGroups();
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
 
   const filteredUsers = users.filter(user =>

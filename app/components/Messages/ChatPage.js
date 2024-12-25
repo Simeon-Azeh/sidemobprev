@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import ChatHeader from './ChatHeader';
 import MessageList from './MessageList';
 import InputSection from './InputSection';
@@ -99,7 +99,11 @@ export default function ChatPage({ route }) {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0} // Adjust offset based on header height
+    >
       <ChatHeader chat={chat} realTimestamp={realTimestamp} />
       <MessageList messages={messages} handleDeleteMessage={handleDeleteMessage} handleOpenMessage={handleOpenMessage} />
       <InputSection
@@ -110,7 +114,7 @@ export default function ChatPage({ route }) {
         setShowEmojiPicker={setShowEmojiPicker}
       />
       {showEmojiPicker && <EmojiPicker handleEmojiSelect={handleEmojiSelect} />}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

@@ -13,6 +13,7 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
   const soundRef = useRef(null);
   const previousMessagesLength = useRef(messages.length);
   const previousMessages = useRef(messages);
+  const sectionListRef = useRef(null);
 
   useEffect(() => {
     const playSound = async () => {
@@ -28,6 +29,14 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
       const receivedMessages = newMessages.filter(msg => msg.sentByUser !== currentUser.email);
       if (receivedMessages.length > 0) {
         playSound();
+      }
+      // Scroll to the last message when new messages are received
+      if (sectionListRef.current) {
+        sectionListRef.current.scrollToLocation({
+          sectionIndex: sortedMessages.length - 1,
+          itemIndex: sortedMessages[sortedMessages.length - 1].data.length - 1,
+          animated: true,
+        });
       }
     }
 
@@ -143,17 +152,36 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
     </View>
   );
 
+  const getItemLayout = (data, index) => {
+    const itemHeight = 60; // Adjust this value based on your item height
+    const sectionHeaderHeight = 30; // Adjust this value based on your section header height
+    const offset = index * itemHeight + Math.floor(index / data.length) * sectionHeaderHeight;
+    return { length: itemHeight, offset, index };
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}
     >
       <SectionList
+        ref={sectionListRef}
         sections={sortedMessages}
         renderItem={renderMessage}
         renderSectionHeader={renderSectionHeader}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.chatList}
+        getItemLayout={getItemLayout}
+        onScrollToIndexFailed={(info) => {
+          const wait = new Promise(resolve => setTimeout(resolve, 500));
+          wait.then(() => {
+            sectionListRef.current?.scrollToLocation({
+              sectionIndex: info.index.sectionIndex,
+              itemIndex: info.index.itemIndex,
+              animated: true,
+            });
+          });
+        }}
       />
     </KeyboardAvoidingView>
   );
