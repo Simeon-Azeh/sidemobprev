@@ -6,6 +6,7 @@ import Feather from '@expo/vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth } from '../../../firebaseConfig';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -13,6 +14,12 @@ export default function StatsCard() {
   const navigation = useNavigation();
   const [savedCoursesCount, setSavedCoursesCount] = useState(0);
   const [certificatesCount, setCertificatesCount] = useState(0);
+  const colorScheme = useColorScheme();
+
+  const themeCardBackgroundColor = colorScheme === 'light' ? Colors.WHITE : Colors.DARK_SECONDARY;
+  const themeTextColor = colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT;
+  const themeIconColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE;
+  const themeBorderColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BORDER;
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -60,10 +67,10 @@ export default function StatsCard() {
         <TouchableOpacity
           key={index}
           style={{
-            backgroundColor: '#fff',
+            backgroundColor: themeCardBackgroundColor,
             borderRadius: 8,
             borderWidth: 1,
-            borderColor: Colors.PRIMARY,
+            borderColor: themeBorderColor,
             padding: 15,
             alignItems: 'center',
             width: screenWidth * 0.45,
@@ -71,16 +78,16 @@ export default function StatsCard() {
           onPress={() => navigation.navigate(item.screen)}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <Feather name={item.icon} size={25} color={Colors.PRIMARY} />
-            <Text style={{ fontSize: screenWidth * 0.04, color: Colors.SECONDARY, fontFamily: 'Poppins-Medium', marginTop: 5 }}>
+            <Feather name={item.icon} size={25} color={themeIconColor} />
+            <Text style={{ fontSize: screenWidth * 0.04, color: themeTextColor, fontFamily: 'Poppins-Medium', marginTop: 5 }}>
               {item.count}
             </Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 1 }}>
-            <Text style={{ fontSize: screenWidth * 0.035, fontFamily: 'Poppins-Medium', marginVertical: 5, color: Colors.PRIMARY }}>
+            <Text style={{ fontSize: screenWidth * 0.035, fontFamily: 'Poppins-Medium', marginVertical: 5, color: themeTextColor }}>
               {item.title}
             </Text>
-            <MaterialIcons name="chevron-right" size={25} color={Colors.PRIMARY} />
+            <MaterialIcons name="chevron-right" size={25} color={themeIconColor} />
           </View>
         </TouchableOpacity>
       ))}

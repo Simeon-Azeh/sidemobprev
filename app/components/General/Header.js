@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, TextInput, TouchableOpacity, Image, StyleSheet, Dimensions, Text, Animated, FlatList } from 'react-native';
+import { View, TextInput, TouchableOpacity, Image, StyleSheet, Dimensions, Text, Animated, FlatList, useColorScheme } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import Colors from '../../../assets/Utils/Colors';
@@ -26,6 +26,17 @@ export default function Header() {
   const [searchResults, setSearchResults] = useState([]);
   const translateY = useRef(new Animated.Value(0)).current; // Start at visible position
   const opacity = useRef(new Animated.Value(1)).current; // Start fully visible
+
+  const colorScheme = useColorScheme();
+
+  const themeBackgroundColor = colorScheme === 'light' ? Colors.WHITE : Colors.DARK_BACKGROUND;
+  const themeTextColor = colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT;
+  const themePlaceholderTextColor = colorScheme === 'light' ? '#888' : Colors.DARK_TEXT_MUTED;
+  const themeIconColor = colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT;
+  const themeSearchBackgroundColor = colorScheme === 'light' ? '#f0f0f0' : Colors.DARK_SECONDARY;
+  const themeBadgeBackgroundColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE;
+  const themeBadgeTextColor = colorScheme === 'light' ? '#fff' : '#000';
+  const themeBorderColor = colorScheme === 'light' ? Colors.LIGHT_GRAY : Colors.DARK_TEXT;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -177,15 +188,15 @@ export default function Header() {
   );
 
   return (
-    <View style={styles.headerContainer}>
+    <View style={[styles.headerContainer, { backgroundColor: themeBackgroundColor, borderBottomColor: themeBorderColor }]}>
       <TouchableOpacity onPress={() => navigation.openDrawer()}>
-        <Icon name="menu" size={30} color={Colors.SECONDARY} />
+        <Icon name="menu" size={30} color={themeIconColor} />
       </TouchableOpacity>
-      <View style={styles.searchContainer}>
-        <Icon name="search" size={20} color="#888" style={styles.searchIcon} />
+      <View style={[styles.searchContainer, { backgroundColor: themeSearchBackgroundColor }]}>
+        <Icon name="search" size={20} color={themePlaceholderTextColor} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
-          placeholderTextColor="#888"
+          style={[styles.searchInput, { color: themeTextColor }]}
+          placeholderTextColor={themePlaceholderTextColor}
           onChangeText={handleSearch}
           onBlur={() => setIsTyping(false)} // Clear typing state when input loses focus
         />
@@ -200,7 +211,7 @@ export default function Header() {
               },
             ]}
           >
-            <Text style={styles.placeholderText}>
+            <Text style={[styles.placeholderText, { color: themePlaceholderTextColor }]}>
               {placeholderText}
             </Text>
           </Animated.View>
@@ -208,10 +219,10 @@ export default function Header() {
       </View>
       <View style={styles.iconContainer}>
         <TouchableOpacity onPress={() => navigation.navigate('Notifications')}>
-          <Icon name="bell" size={30} color={Colors.SECONDARY} />
+          <Icon name="bell" size={30} color={themeIconColor} />
           {notificationCount > 0 && (
-            <View style={styles.badgeContainer}>
-              <Text style={styles.badgeText}>{notificationCount}</Text>
+            <View style={[styles.badgeContainer, { backgroundColor: themeBadgeBackgroundColor }]}>
+              <Text style={[styles.badgeText, { color: themeBadgeTextColor }]}>{notificationCount}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -219,7 +230,7 @@ export default function Header() {
       <TouchableOpacity style={styles.iconContainer} onPress={() => navigation.navigate('Profile')}>
         <Image
           source={profileAvatar ? { uri: profileAvatar } : DefaultAvatar}
-          style={styles.profileImage}
+          style={[styles.profileImage, { borderColor: themeBorderColor }]}
         />
       </TouchableOpacity>
       {isTyping && (
@@ -242,15 +253,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 15,
-    backgroundColor: '#fff',
     marginTop: 40,
     width: '100%', 
     justifyContent: 'space-between', 
+    borderBottomWidth: 1, // Add bottom border
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
     borderRadius: 15,
     paddingHorizontal: 30,
     marginLeft: 15,
@@ -267,7 +277,6 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 40,
     paddingHorizontal: 20, 
-    color: Colors.SECONDARY,
     fontFamily: 'Poppins-Medium',
     fontSize: screenWidth * 0.03,
   },
@@ -280,7 +289,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   placeholderText: {
-    color: '#888',
     fontFamily: 'Poppins-Medium',
     fontSize: screenWidth * 0.03,
   },
@@ -297,12 +305,12 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: screenWidth * 0.11 / 2, // Maintain circular shape
     resizeMode: 'cover', // Ensure the image covers the view without stretching
+    borderWidth: 2, // Add border around profile image
   },
   badgeContainer: {
     position: 'absolute',
     top: -5,
     right: -5,
-    backgroundColor: Colors.PRIMARY,
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -310,7 +318,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: {
-    color: '#fff',
     fontSize: 10,
     fontFamily: 'Poppins-Medium',
   },

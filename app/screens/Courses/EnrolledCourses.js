@@ -99,6 +99,18 @@ const EnrolledCourses = () => {
     );
   }
 
+  if (enrolledCourses.length === 0) {
+    return (
+      <View style={styles.noCoursesContainer}>
+        <Ionicons name="book-outline" size={100} color={Colors.SECONDARY} />
+        <Text style={styles.noCoursesText}>No enrolled courses available</Text>
+        <TouchableOpacity style={styles.exploreButton} onPress={() => navigation.navigate('Courses')}>
+          <Text style={styles.exploreButtonText}>Explore Courses</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -171,6 +183,31 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: Colors.SECONDARY,
+    fontFamily: 'Poppins-Medium',
+  },
+  noCoursesContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  noCoursesText: {
+    marginTop: 20,
+    fontSize: 18,
+    color: Colors.SECONDARY,
+    fontFamily: 'Poppins-Medium',
+    textAlign: 'center',
+  },
+  exploreButton: {
+    marginTop: 20,
+    backgroundColor: Colors.PRIMARY,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  exploreButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontFamily: 'Poppins-Medium',
   },
 });

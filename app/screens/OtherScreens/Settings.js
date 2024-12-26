@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Dimensions, useColorScheme } from 'react-native';
 import Header from '../../components/General/Header';
 import Colors from '../../../assets/Utils/Colors';
 import ProfileTab from '../../components/Settings/ProfileTab';
@@ -15,6 +15,12 @@ export default function Settings() {
   const [pushNotifications, setPushNotifications] = useState(false);
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
   const [autoRenewal, setAutoRenewal] = useState(false);
+
+  const colorScheme = useColorScheme();
+
+  const themeBackgroundColor = colorScheme === 'light' ? Colors.WHITE : Colors.DARK_BACKGROUND;
+  const themeTextColor = colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT;
+  const themeActiveTabColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_TEXT;
 
   const renderContent = () => {
     switch (activeTab) {
@@ -43,7 +49,7 @@ export default function Settings() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
+    <View style={{ flex: 1, backgroundColor: themeBackgroundColor }}>
       <Header />
       <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginVertical: 20 }}>
         {['Profile', 'Preferences', 'Security', 'Payment'].map(tab => (
@@ -52,14 +58,14 @@ export default function Settings() {
             onPress={() => setActiveTab(tab)}
             style={{
               borderBottomWidth: activeTab === tab ? 2 : 0,
-              borderBottomColor: Colors.PRIMARY,
+              borderBottomColor: themeActiveTabColor,
               paddingBottom: 1,
             }}
           >
             <Text style={{ 
               fontSize: screenWidth * 0.035, 
               fontFamily: 'Poppins-Medium',
-              color: activeTab === tab ? Colors.PRIMARY : Colors.SECONDARY,
+              color: activeTab === tab ? themeActiveTabColor : themeTextColor,
             }}>
               {tab}
             </Text>

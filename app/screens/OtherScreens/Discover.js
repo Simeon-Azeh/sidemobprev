@@ -90,7 +90,7 @@ export default function Discover() {
                 style={[
                   styles.leaderboardItem,
                   {
-                    left: index === 1 ? '15%' : index === 2 ? '68%' : '40%',
+                    left: index === 1 ? '12%' : index === 2 ? '68%' : '40%',
                     top: index === 1 ? '25%' : index === 2 ? '30%' : '10%', // Adjust top positions
                   },
                 ]}
@@ -141,9 +141,14 @@ export default function Discover() {
           ))}
         </View>
 
-        <TouchableOpacity style={{...styles.button, backgroundColor: '#fff', borderColor: '#9835ff', borderWidth: 1}} onPress={() => navigation.navigate('RedeemPage')} >
-          <Text style={{...styles.buttonText, color: '#9835ff'} }>Redeem Coins</Text>
-        </TouchableOpacity>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={{...styles.button, backgroundColor: '#fff', borderColor: '#9835ff', borderWidth: 1}} onPress={() => navigation.navigate('RedeemPage')} >
+            <Text style={{...styles.buttonText, color: '#9835ff'} }>Redeem Coins</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{...styles.button, backgroundColor: '#9835ff', marginLeft: 10}} onPress={() => navigation.navigate('RedeemedTicketsPage')} >
+            <Text style={{...styles.buttonText, color: '#fff'} }>View Tickets</Text>
+          </TouchableOpacity>
+        </View>
 
         <Modal
           animationType="fade"
@@ -273,13 +278,16 @@ const styles = StyleSheet.create({
   statusIconSmall: {
     marginLeft: 5,
   },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 30,
+  },
   button: {
     backgroundColor: Colors.PRIMARY,
     paddingVertical: 10,
     paddingHorizontal: 40,
     borderRadius: 5,
-    alignSelf: 'center',
-    marginTop: 30,
   },
   buttonText: {
     color: '#fff',

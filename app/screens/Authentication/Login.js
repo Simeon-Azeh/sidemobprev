@@ -4,7 +4,7 @@ import LoginImg from '../../../assets/Images/LoginImg.png';
 import Colors from '../../../assets/Utils/Colors';
 import GoogleIcon from '../../../assets/Images/GoogleIcon.png';
 import { useNavigation } from '@react-navigation/native';
-import { auth } from '../../../firebaseConfig'; // Adjust the path as necessary
+import { auth } from '../../../firebaseConfig';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect } from 'firebase/auth';
 import { Feather } from '@expo/vector-icons';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';

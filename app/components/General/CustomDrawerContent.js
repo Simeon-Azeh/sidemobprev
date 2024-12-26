@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, useColorScheme } from 'react-native';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
 import { Feather, MaterialIcons, FontAwesome5, FontAwesome6 } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors'; // Adjust this path as necessary
@@ -9,6 +9,14 @@ const { width: screenWidth } = Dimensions.get('window');
 
 const CustomDrawerContent = ({ navigation }) => {
   const [activeScreen, setActiveScreen] = useState('');
+  const colorScheme = useColorScheme();
+
+  const themeBackgroundColor = colorScheme === 'light' ? Colors.WHITE : Colors.DARK_BACKGROUND;
+  const themeTextColor = colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT;
+  const themeActiveBackgroundColor = colorScheme === 'light' ? Colors.PRIMARY_LIGHTER : Colors.DARK_BUTTON;
+  const themeActiveTextColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE;
+  const themeBadgeBackgroundColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE;
+  const themeBadgeTextColor = colorScheme === 'light' ? Colors.WHITE : Colors.BLACK;
 
   const handlePress = (screen) => {
     setActiveScreen(screen);
@@ -32,7 +40,7 @@ const CustomDrawerContent = ({ navigation }) => {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeBackgroundColor }]}>
       <DrawerContentScrollView contentContainerStyle={styles.drawerContent}>
         {customDrawerItems.map((item) => (
           <TouchableOpacity
@@ -41,26 +49,26 @@ const CustomDrawerContent = ({ navigation }) => {
             style={[
               styles.drawerItem,
               activeScreen === item.screen && styles.activeDrawerItem,
-              { backgroundColor: activeScreen === item.screen ? Colors.PRIMARY_LIGHTER : '#fff' }
+              { backgroundColor: activeScreen === item.screen ? themeActiveBackgroundColor : themeBackgroundColor }
             ]}
           >
             <View style={styles.iconContainer}>
               {React.cloneElement(item.icon, {
-                color: activeScreen === item.screen ? Colors.PRIMARY : Colors.SECONDARY,
+                color: activeScreen === item.screen ? themeActiveTextColor : themeTextColor,
               })}
             </View>
             <View style={styles.labelContainer}>
               <Text
                 style={[
                   styles.drawerLabel,
-                  { color: activeScreen === item.screen ? Colors.PRIMARY : Colors.SECONDARY },
+                  { color: activeScreen === item.screen ? themeActiveTextColor : themeTextColor },
                 ]}
               >
                 {item.label}
               </Text>
               {item.badge && (
-                <View style={styles.badgeContainer}>
-                  <Text style={styles.badgeText}>{item.badge}</Text>
+                <View style={[styles.badgeContainer, { backgroundColor: themeBadgeBackgroundColor }]}>
+                  <Text style={[styles.badgeText, { color: themeBadgeTextColor }]}>{item.badge}</Text>
                 </View>
               )}
             </View>
@@ -114,14 +122,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   badgeContainer: {
-    backgroundColor: Colors.PRIMARY,
     borderRadius: 10,
     paddingVertical: 1,
     paddingHorizontal: 8,
     marginRight: screenWidth * 0.15,
   },
   badgeText: {
-    color: Colors.WHITE,
     fontFamily: 'Poppins-Medium',
     fontSize: screenWidth * 0.025,
   },

@@ -7,6 +7,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth } from '../../../firebaseConfig';
 import NoRecommendedCourses from './NoRecommendedCourses';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -14,9 +15,15 @@ const sliderWidth = screenWidth;
 const itemWidth = screenWidth * 0.6;
 
 const renderItem = ({ item }) => {
+  const colorScheme = useColorScheme();
+  const themeCardBackgroundColor = colorScheme === 'light' ? Colors.WHITE : Colors.DARK_SECONDARY;
+  const themeTextColor = colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT;
+  const themeIconColor = colorScheme === 'light' ? '#9835ff' : Colors.PRIMARY;
+  const themeSubTextColor = colorScheme === 'light' ? '#a9a9a9' : Colors.DARK_TEXT_MUTED;
+
   return (
     <View style={{
-      backgroundColor: '#fff',
+      backgroundColor: themeCardBackgroundColor,
       borderRadius: 8,
       overflow: 'hidden',
       padding: 10,
@@ -33,18 +40,18 @@ const renderItem = ({ item }) => {
         }}
       />
       <View style={{ padding: 10 }}>
-        <Text style={{ fontSize: screenWidth * 0.035, fontFamily: 'Poppins-Medium', color: Colors.SECONDARY }}>{item.title}</Text>
+        <Text style={{ fontSize: screenWidth * 0.035, fontFamily: 'Poppins-Medium', color: themeTextColor }}>{item.title}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-          <MaterialIcons name="school" size={20} color="#9835ff" />
-          <Text style={{ marginLeft: 5, fontSize: 14, color: '#9835ff', fontFamily: 'Poppins-Medium' }}>{item.level}</Text>
+          <MaterialIcons name="school" size={20} color={themeIconColor} />
+          <Text style={{ marginLeft: 5, fontSize: 14, color: themeIconColor, fontFamily: 'Poppins-Medium' }}>{item.level}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-          <MaterialCommunityIcons name="timelapse" size={18} color="#a9a9a9" />
-          <Text style={{ fontSize: 14, color: '#a9a9a9', marginLeft: 2, fontFamily: 'Poppins-Medium' }}> {item.timeToComplete}</Text>
+          <MaterialCommunityIcons name="timelapse" size={18} color={themeSubTextColor} />
+          <Text style={{ fontSize: 14, color: themeSubTextColor, marginLeft: 2, fontFamily: 'Poppins-Medium' }}> {item.timeToComplete}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
           <MaterialIcons name="star" size={20} color="#f1c40f" />
-          <Text style={{ marginLeft: 5, fontSize: 14, color: '#a9a9a9', fontFamily: 'Poppins' }}>{item.ratings.toFixed(1)} ({item.reviews} reviews)</Text>
+          <Text style={{ marginLeft: 5, fontSize: 14, color: themeSubTextColor, fontFamily: 'Poppins' }}>{item.ratings.toFixed(1)} ({item.reviews} reviews)</Text>
         </View>
       </View>
     </View>
@@ -127,7 +134,6 @@ const RecommendedCoursesCarousel = () => {
           />
         ) : (
           <NoRecommendedCourses />
-
         )
       )}
     </View>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, ActivityIndicator, Dimensions } from 'react-native';
+import { StyleSheet, View, ActivityIndicator, Dimensions,  } from 'react-native';
 import { useFonts } from 'expo-font';
 import 'react-native-gesture-handler'; 
 import { NavigationContainer } from '@react-navigation/native';
@@ -54,6 +54,9 @@ import IQprofile from './app/screens/IQlink/IQProfile';
 import AppointmentBooking from './app/screens/SecondaryScreens/AppointmentBooking';
 import CustomHeaderTitle from './app/components/General/CustomHeaderTitle';
 import GroupChatPage from './app/components/Messages/GroupChatPage';
+import RedeemedTicketsPage from './app/components/Discover/RedeemedTickets';
+import { Appearance, useColorScheme } from 'react-native';
+
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const Stack = createStackNavigator();
@@ -61,23 +64,30 @@ const Drawer = createDrawerNavigator();
 
 // Drawer Navigator component
 function DrawerNavigator() {
+  const colorScheme = useColorScheme();
+
+  const themeBackgroundColor = colorScheme === 'light' ? Colors.WHITE : Colors.DARK_BACKGROUND;
+  const themeActiveTintColor = colorScheme === 'light' ? '#9835ff' : Colors.PRIMARY;
+  const themeInactiveTintColor = colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT;
+  const themePressColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BUTTON;
+
   return (
     <Drawer.Navigator
       drawerContent={(props) => <CustomDrawerContent {...props} />}
       screenOptions={{
         headerShown: false,
         drawerStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: themeBackgroundColor,
           width: screenWidth * 0.7,
           padding: 10,
         },
-        drawerActiveTintColor: '#9835ff', // Active item color
-        drawerInactiveTintColor: Colors.SECONDARY, // Inactive item color
+        drawerActiveTintColor: themeActiveTintColor, // Active item color
+        drawerInactiveTintColor: themeInactiveTintColor, // Inactive item color
         drawerLabelStyle: {
           fontFamily: 'Poppins-Medium',
           fontSize: 18,
         },
-        drawerPressColor: Colors.PRIMARY, // Press color
+        drawerPressColor: themePressColor, // Press color
         drawerItemStyle: {
           borderRadius: 8,
         },
@@ -149,7 +159,6 @@ function DrawerNavigator() {
     </Drawer.Navigator>
   );
 }
-
 export default function App() {
   const [fontsLoaded] = useFonts({
     'Poppins': require('./assets/fonts/Poppins-Regular.ttf'),
@@ -259,6 +268,9 @@ export default function App() {
          }} />
         <Stack.Screen name='IQprofile' component={IQprofile} options={{ title: 'Profile',
           headerTitle: () => <CustomHeaderTitle title="Feed" />
+         }} />
+           <Stack.Screen name='RedeemedTicketsPage' component={RedeemedTicketsPage} options={{ title: 'Profile',
+          headerTitle: () => <CustomHeaderTitle title="Tickets" />
          }} />
       </Stack.Navigator>
     </NavigationContainer>

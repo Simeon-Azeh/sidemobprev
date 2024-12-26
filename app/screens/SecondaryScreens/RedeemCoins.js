@@ -1,18 +1,46 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, Pressable, ScrollView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions, Modal, ScrollView, Image, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons, FontAwesome6 } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
-import redeemImg from '../../../assets/Images/redeem.png'
-import DesignUi from '../../../assets/Images/DesignUi.png'
-import DesignUi2 from '../../../assets/Images/DesignUi2.png'
+import redeemImg from '../../../assets/Images/redeem.png';
+import DesignUi from '../../../assets/Images/DesignUi.png';
+import DesignUi2 from '../../../assets/Images/DesignUi2.png';
+import { getFirestore, doc, getDocs, updateDoc, collection, addDoc, query, where } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const RedeemCoinsPage = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [totalCoins, setTotalCoins] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [redeeming, setRedeeming] = useState(false);
 
-  const totalCoins = 2500;
+  const auth = getAuth();
+  const db = getFirestore();
+  const user = auth.currentUser;
+
+  useEffect(() => {
+    const fetchUserCoins = async () => {
+      try {
+        const q = query(collection(db, 'quizResults'), where('userId', '==', user.uid));
+        const querySnapshot = await getDocs(q);
+        let coins = 0;
+        querySnapshot.forEach((doc) => {
+          coins += doc.data().coinsEarned || 0;
+        });
+        setTotalCoins(coins);
+      } catch (error) {
+        console.error("Error fetching user coins:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserCoins();
+  }, [user.uid]);
+
   const educationItems = [
     { id: '1', name: 'Pencil', icon: 'pencil-outline', coins: 300 },
     { id: '2', name: 'Books', icon: 'book-outline', coins: 500 },
@@ -20,10 +48,14 @@ const RedeemCoinsPage = ({ navigation }) => {
   ];
   const partners = [
     { id: '4', name: 'Partner 1', icon: 'business', coins: 800 },
-    { id: '5', name: 'Partner 2', icon: 'briefcase', coins: 1000 },
+    { id: '5', name: 'Partner 2', icon: 'briefcase', coins: 900 },
   ];
 
   const handleRedeemPress = (item) => {
+    if (totalCoins < item.coins) {
+      Alert.alert('Insufficient Coins', 'You do not have enough coins to redeem this item.');
+      return;
+    }
     setSelectedItem(item);
     setModalVisible(true);
   };
@@ -32,9 +64,61 @@ const RedeemCoinsPage = ({ navigation }) => {
     setModalVisible(false);
   };
 
-  const handleRedeemConfirm = () => {
-    setModalVisible(false);
-    navigation.navigate('CelebrationPage', { item: selectedItem });
+  const generateScratchCode = () => {
+    return Math.random().toString(36).substring(2, 10).toUpperCase();
+  };
+
+  const handleRedeemConfirm = async () => {
+    setRedeeming(true);
+    try {
+      const newTotalCoins = totalCoins - selectedItem.coins;
+  
+      // Update the user's coins in quizResults
+      const q = query(collection(db, 'quizResults'), where('userId', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+      let remainingCoins = selectedItem.coins;
+  
+      for (const docSnapshot of querySnapshot.docs) {
+        const quizResult = docSnapshot.data();
+        if (remainingCoins <= 0) break;
+  
+        const coinsToDeduct = Math.min(quizResult.coinsEarned, remainingCoins);
+        remainingCoins -= coinsToDeduct;
+  
+        await updateDoc(doc(db, 'quizResults', docSnapshot.id), {
+          coinsEarned: quizResult.coinsEarned - coinsToDeduct,
+        });
+      }
+  
+      const scratchCode = generateScratchCode();
+      const expirationDate = new Date();
+      expirationDate.setMonth(expirationDate.getMonth() + 1);
+  
+      await addDoc(collection(db, 'CoinsRedeemed'), {
+        userId: user.uid,
+        itemName: selectedItem.name,
+        itemId: selectedItem.id,
+        coinsSpent: selectedItem.coins,
+        scratchCode: scratchCode,
+        redeemedAt: new Date(),
+        expirationDate: expirationDate,
+        redeemed: false, // Add redeemed field with default value false
+      });
+  
+      setTotalCoins(newTotalCoins);
+      setModalVisible(false);
+      navigation.navigate('CelebrationPage', { 
+        item: selectedItem, 
+        scratchCode: scratchCode, 
+        expirationDate: expirationDate.toLocaleDateString(), 
+        coinsSpent: selectedItem.coins 
+      });
+    } catch (error) {
+      console.error("Error redeeming item:", error);
+      Alert.alert('Error', 'There was an error redeeming the item. Please try again.');
+    } finally {
+      setRedeeming(false);
+    }
   };
 
   const renderItem = ({ item }) => (
@@ -114,9 +198,13 @@ const RedeemCoinsPage = ({ navigation }) => {
               <Text style={styles.modalDescription}>
                 Do you want to redeem {selectedItem.coins} coins for {selectedItem.name}?
               </Text>
-              <TouchableOpacity style={styles.confirmButton} onPress={handleRedeemConfirm}>
-                <Text style={styles.confirmButtonText}>REDEEM</Text>
-              </TouchableOpacity>
+              {redeeming ? (
+                <ActivityIndicator size="large" color={Colors.PRIMARY} />
+              ) : (
+                <TouchableOpacity style={styles.confirmButton} onPress={handleRedeemConfirm}>
+                  <Text style={styles.confirmButtonText}>REDEEM</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
         </Modal>
@@ -127,7 +215,7 @@ const RedeemCoinsPage = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: {
-   
+    flex: 1,
   },
   header: {
     backgroundColor: '#9835ff',
@@ -250,14 +338,12 @@ const styles = StyleSheet.create({
     width: screenWidth * 0.8,
     padding: 20,
     alignItems: 'center',
-   
   },
   closeButton: {
     position: 'absolute',
     top: 10,
     right: 10,
     zIndex: 1,
-
   },
   modalImage: {
     width: screenWidth * 0.6,

@@ -8,11 +8,17 @@ import { auth } from '../../../firebaseConfig';
 import BarChartComponent from './BarChart';
 import TaskListComponent from './TaskList';
 import StudyTrackerSkeleton from '../StudyTrackerSkeleton';
+import { useColorScheme } from 'react-native';
 
 const StudyTracker = () => {
   const [isChartView, setIsChartView] = useState(true);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const colorScheme = useColorScheme();
+
+  const themeBackgroundColor = colorScheme === 'light' ? Colors.WHITE : Colors.DARK_BACKGROUND;
+  const themeButtonBackgroundColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BUTTON;
+  const themeButtonTextColor = Colors.WHITE;
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -70,19 +76,19 @@ const StudyTracker = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themeBackgroundColor }]}>
       <View style={styles.buttonContainer}>
         <Button
           title={isChartView ? 'Tasks' : 'Chart'}
           icon={
             isChartView ? (
-              <FontAwesome name="tasks" size={20} color="white" style={styles.iconStyle} />
+              <FontAwesome name="tasks" size={20} color={themeButtonTextColor} style={styles.iconStyle} />
             ) : (
-              <FontAwesome name="bar-chart" size={20} color="white" style={styles.iconStyle} />
+              <FontAwesome name="bar-chart" size={20} color={themeButtonTextColor} style={styles.iconStyle} />
             )
           }
-          buttonStyle={styles.buttonStyle}
-          titleStyle={styles.titleStyle}
+          buttonStyle={[styles.buttonStyle, { backgroundColor: themeButtonBackgroundColor }]}
+          titleStyle={[styles.titleStyle, { color: themeButtonTextColor }]}
           onPress={() => setIsChartView(!isChartView)}
         />
       </View>
@@ -105,13 +111,11 @@ const StudyTracker = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.WHITE,
   },
   buttonContainer: {
     padding: 10,
   },
   buttonStyle: {
-    backgroundColor: Colors.PRIMARY,
     borderRadius: 5,
   },
   titleStyle: {

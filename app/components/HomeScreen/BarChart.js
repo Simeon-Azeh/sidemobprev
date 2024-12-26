@@ -6,6 +6,7 @@ import Colors from '../../../assets/Utils/Colors';
 import { auth, firestore } from '../../../firebaseConfig';
 import { collection, doc, onSnapshot } from 'firebase/firestore';
 import BarChartSkeleton from '../BarchartSkeleton';
+import { useColorScheme } from 'react-native';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -17,6 +18,7 @@ const BarChartComponent = () => {
     sixMonths: [0, 0, 0, 0, 0, 0],
   });
   const [loading, setLoading] = useState(true);
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const user = auth.currentUser;
@@ -76,16 +78,19 @@ const BarChartComponent = () => {
   };
 
   const chartConfig = {
-    backgroundGradientFrom: Colors.WHITE,
-    backgroundGradientTo: Colors.WHITE,
-    color: (opacity = 1) => `rgba(152, 53, 255, ${opacity})`,
+    backgroundGradientFrom: colorScheme === 'light' ? Colors.WHITE : Colors.DARK_BACKGROUND,
+    backgroundGradientTo: colorScheme === 'light' ? Colors.WHITE : Colors.DARK_BACKGROUND,
+    color: (opacity = 1) => colorScheme === 'light' ? `rgba(152, 53, 255, ${opacity})` : `rgba(255, 255, 255, ${opacity})`,
     barPercentage: 0.5,
     borderRadius: 16,
+    labelColor: (opacity = 1) => colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE,
   };
 
   return (
     <View style={{ padding: 20 }}>
-      <Text style={styles.headerText}>Study Hours</Text>
+      <Text style={[styles.headerText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>
+        Study Hours
+      </Text>
       {loading ? (
         <BarChartSkeleton />
       ) : (
@@ -97,7 +102,19 @@ const BarChartComponent = () => {
               { label: 'This Month', value: 'month' },
               { label: 'Last 6 Months', value: 'sixMonths' },
             ]}
-            style={pickerStyles}
+            style={{
+              ...pickerStyles,
+              inputAndroid: {
+                ...pickerStyles.inputAndroid,
+                color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE,
+                backgroundColor: colorScheme === 'light' ? Colors.WHITE : Colors.DARK_SECONDARY,
+              },
+              inputIOS: {
+                ...pickerStyles.inputIOS,
+                color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE,
+                backgroundColor: colorScheme === 'light' ? Colors.WHITE : Colors.DARK_SECONDARY,
+              },
+            }}
             value={selectedTimePeriod} // Set the default value
           />
           <BarChart
@@ -123,22 +140,18 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.045,
     marginBottom: 10,
     fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
   },
 });
 
 const pickerStyles = {
   inputAndroid: {
-    color: Colors.SECONDARY,
     padding: 10,
     borderWidth: 1,
     borderColor: 'gray',
     borderRadius: 5,
-    backgroundColor: Colors.WHITE,
     fontFamily: 'Poppins-Medium',
   },
   inputIOS: {
-    color: Colors.SECONDARY,
     padding: 10,
     borderWidth: 1,
     borderColor: 'gray',
