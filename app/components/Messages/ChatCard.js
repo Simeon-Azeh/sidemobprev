@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import Colors from '../../../assets/Utils/Colors';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, query, orderBy, limit, onSnapshot, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { useColorScheme } from 'react-native';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -17,6 +18,7 @@ export default function ChatCard({ chat }) {
 
   const [lastMessage, setLastMessage] = useState(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const db = getFirestore();
@@ -76,31 +78,48 @@ export default function ChatCard({ chat }) {
     return name;
   };
 
+  const truncateText = (text, maxLength) => {
+    if (text.length > maxLength) {
+      return text.substring(0, maxLength) + '...';
+    }
+    return text;
+  };
+
+  const themeBackgroundColor = colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY;
+  const themeBorderColor = colorScheme === 'light' ? '#f0f0f0' : Colors.DARK_BORDER;
+  const themeTextColor = colorScheme === 'light' ? '#000' : Colors.WHITE;
+  const themeTimeColor = colorScheme === 'light' ? '#888' : Colors.DARK_TEXT;
+  const themeMessagePreviewColor = colorScheme === 'light' ? '#888' : Colors.DARK_TEXT;
+  const themeUnreadMessageColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE;
+  const themeBadgeBackgroundColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE;
+  const themeBadgeTextColor = colorScheme === 'light' ? '#fff' : '#000';
+
   return (
-    <TouchableOpacity style={styles.cardContainer} onPress={handlePress}>
+    <TouchableOpacity style={[styles.cardContainer, { backgroundColor: themeBackgroundColor, borderBottomColor: themeBorderColor, shadowColor: colorScheme === 'light' ? '#ccc' : 'transparent' }]} onPress={handlePress}>
       <Image source={{ uri: chat.profileImage }} style={styles.profileImage} />
       <View style={styles.textContainer}>
         <View style={styles.header}>
-          <Text style={styles.name}>{formatName(chat.name)}</Text>
-          <Text style={styles.time}>{lastMessage ? lastMessage.timestamp : ''}</Text>
+          <Text style={[styles.name, { color: themeTextColor }]}>{formatName(chat.name)}</Text>
+          <Text style={[styles.time, { color: themeTimeColor }]}>{lastMessage ? lastMessage.timestamp : ''}</Text>
         </View>
         <Text
           style={[
             styles.messagePreview,
+            { color: themeMessagePreviewColor },
             lastMessage && lastMessage.receivedByUser === currentUser.email && lastMessage.unread
-              ? styles.unreadMessage
+              ? { color: themeUnreadMessageColor, fontFamily: 'Poppins-Medium' }
               : null,
           ]}
           numberOfLines={1} // Limit the number of lines to 1
           ellipsizeMode="tail" // Add ellipsis at the end if the text is too long
         >
           {lastMessage
-            ? lastMessage.text
+            ? truncateText(lastMessage.text, 30) // Truncate the message text to 30 characters
             : 'Select chat to start messaging'}
         </Text>
         {unreadCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{unreadCount}</Text>
+          <View style={[styles.badge, { backgroundColor: themeBadgeBackgroundColor }]}>
+            <Text style={[styles.badgeText, { color: themeBadgeTextColor }]}>{unreadCount}</Text>
           </View>
         )}
       </View>
@@ -114,11 +133,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 10, // Reduced padding to decrease gap between messages
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    backgroundColor: '#fff',
     marginVertical: 3, // Reduced margin to decrease gap between messages
     borderRadius: 10,
-    shadowColor: '#ccc',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.07,
     shadowRadius: 5,
@@ -140,35 +156,29 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    color: '#000',
     fontFamily: 'Poppins-Medium',
   },
   time: {
     fontSize: 12,
-    color: '#888',
     fontFamily: 'Poppins',
   },
   messagePreview: {
     fontSize: 14,
-    color: '#888',
     marginTop: 3, // Reduced margin to decrease gap between name and message preview
     fontFamily: 'Poppins',
   },
   unreadMessage: {
     fontFamily: 'Poppins-Medium',
-    color: Colors.PRIMARY,
   },
   badge: {
     position: 'absolute',
     right: 10,
     top: 30,
-    backgroundColor: Colors.PRIMARY,
     borderRadius: 10,
     paddingHorizontal: 5,
     paddingVertical: 2,
   },
   badgeText: {
-    color: '#fff',
     fontSize: 12,
   },
 });

@@ -3,29 +3,31 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import * as Progress from 'react-native-progress';  // Progress bar package
 import Colors from '../../../assets/Utils/Colors';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const EnrolledCourseCard = ({ courseId, imageUri, courseTitle, courseCategory, hostImageUri, hostName, progress }) => {
     const navigation = useNavigation();
+    const colorScheme = useColorScheme(); // Get the current color scheme
 
     const handleContinueCourse = () => {
         navigation.navigate('CourseMaterial', { courseId, courseTitle });
     };
 
     return (
-        <View style={styles.card}>
+        <View style={[styles.card, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY }]}>
             {/* Course Image */}
             <Image source={{ uri: imageUri }} style={styles.courseImage} />
 
             {/* Course Title and Category */}
-            <Text style={styles.courseTitle}>{courseTitle}</Text>
-            <Text style={styles.courseCategory}>{courseCategory}</Text>
+            <Text style={[styles.courseTitle, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}>{courseTitle}</Text>
+            <Text style={[styles.courseCategory, { color: colorScheme === 'light' ? '#777' : '#ccc' }]}>{courseCategory}</Text>
 
             {/* Host Information */}
             <View style={styles.hostRow}>
                 <Image source={{ uri: hostImageUri }} style={styles.hostImage} />
-                <Text style={styles.hostName}> {hostName}</Text>
+                <Text style={[styles.hostName, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}> {hostName}</Text>
             </View>
 
             {/* Progress Bar */}
@@ -35,16 +37,27 @@ const EnrolledCourseCard = ({ courseId, imageUri, courseTitle, courseCategory, h
                     width={screenWidth * 0.8} 
                     height={8} 
                     color={Colors.PRIMARY} 
-                    unfilledColor="#e0e0e0" 
+                    unfilledColor={colorScheme === 'light' ? '#e0e0e0' : '#444'} 
                     borderWidth={0}
                     style={styles.progressBar} 
                 />
-                <Text style={styles.progressText}>{`${Math.round(progress * 100)}%`}</Text>
+                <Text style={[styles.progressText, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}>{`${Math.round(progress * 100)}%`}</Text>
             </View>
 
             {/* Continue Button */}
-            <TouchableOpacity style={styles.continueButton} onPress={handleContinueCourse}>
-                <Text style={styles.continueButtonText}>{progress === 0 ? 'Start Course' : 'Continue Course'}</Text>
+            <TouchableOpacity 
+                style={[
+                    styles.continueButton, 
+                    { 
+                        backgroundColor: colorScheme === 'light' ? Colors.WHITE : Colors.DARK_BUTTON, 
+                        borderColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BORDER 
+                    }
+                ]} 
+                onPress={handleContinueCourse}
+            >
+                <Text style={[styles.continueButtonText, { color: colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE }]}>
+                    {progress === 0 ? 'Start Course' : 'Continue Course'}
+                </Text>
             </TouchableOpacity>
         </View>
     );
@@ -52,7 +65,6 @@ const EnrolledCourseCard = ({ courseId, imageUri, courseTitle, courseCategory, h
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: '#fff',
         borderRadius: 10,
         padding: 15,
         marginBottom: 20,
@@ -66,12 +78,10 @@ const styles = StyleSheet.create({
     courseTitle: {
         fontSize: screenWidth * 0.035,
         fontFamily: 'Poppins-Medium',
-        color: Colors.SECONDARY,
     },
     courseCategory: {
         fontSize: screenWidth * 0.03,
         fontFamily: 'Poppins',
-        color: '#777',
         marginBottom: 15,
     },
     hostRow: {
@@ -88,7 +98,6 @@ const styles = StyleSheet.create({
     hostName: {
         fontSize: screenWidth * 0.03,
         fontFamily: 'Poppins-Medium',
-        color: Colors.SECONDARY,
     },
     progressRow: {
         flexDirection: 'row',
@@ -103,18 +112,14 @@ const styles = StyleSheet.create({
     progressText: {
         fontSize: screenWidth * 0.03,
         fontFamily: 'Poppins-Medium',
-        color: Colors.SECONDARY,
     },
     continueButton: {
-        backgroundColor: Colors.WHITE,
         borderRadius: 5,
         paddingVertical: 10,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: Colors.PRIMARY,
     },
     continueButtonText: {
-        color: '#9835FF',
         fontFamily: 'Poppins-Medium',
         fontSize: screenWidth * 0.03,
     },

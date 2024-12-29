@@ -6,6 +6,7 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -13,6 +14,7 @@ export default function Welcome() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(true);
   const [hasResults, setHasResults] = useState(false);
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const checkUserResults = async () => {
@@ -39,14 +41,14 @@ export default function Welcome() {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
         <ActivityIndicator size="large" color={Colors.PRIMARY} />
       </View>
     );
   }
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
       <View>
         <Image 
           source={TestImg} 
@@ -54,17 +56,17 @@ export default function Welcome() {
         />
       </View>
       <View style={styles.textContainer}>
-        <Text style={styles.titleText}>
+        <Text style={[styles.titleText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>
           {hasResults ? 'Welcome Back! 🎉' : 'Get ready for awesomeness 🎓'}
         </Text>
-        <Text style={styles.subtitleText}>
+        <Text style={[styles.subtitleText, { color: colorScheme === 'light' ? '#888' : '#ccc' }]}>
           {hasResults 
             ? 'Continue your journey to ace the GCE Mock exam. Get your scores in real-time. 📊'
             : 'We’ve built a sample of your GCE Mock exam to get you ready any day, any time. Get your scores in real-time. ⏰'
           }
         </Text>
         <TouchableOpacity 
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BUTTON, borderColor: colorScheme === 'light' ? 'transparent' : Colors.DARK_BORDER, borderWidth: colorScheme === 'light' ? 0 : 1 }]}
           onPress={() => navigation.navigate('QuizChoice')}
         >
           <Text style={styles.buttonText}>
@@ -81,11 +83,9 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
   mainContainer: {
     flex: 1,
-    backgroundColor: '#fff',
     padding: 20,
   },
   image: {
@@ -102,14 +102,12 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.045,
     fontFamily: 'Poppins-Medium',
     textAlign: 'center',
-    color: Colors.SECONDARY,
     marginBottom: 10,
   },
   subtitleText: {
     fontSize: screenWidth * 0.03,
     fontFamily: 'Poppins-Medium',
     textAlign: 'center',
-    color: '#888',
     marginBottom: 20,
   },
   button: {
@@ -117,7 +115,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingVertical: 10,
     paddingHorizontal: 20,
-    backgroundColor: Colors.PRIMARY,
     borderRadius: 10,
   },
   buttonText: {

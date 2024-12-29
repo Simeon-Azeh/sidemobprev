@@ -6,6 +6,7 @@ import DesignUi3 from '../../../assets/Images/DesignUi3.png';
 import Feather from '@expo/vector-icons/Feather';
 import { getFirestore, collection, query, where, getDocs, setDoc, doc } from 'firebase/firestore';
 import { auth } from '../../../firebaseConfig';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -13,6 +14,7 @@ export default function QuizInstructions({ route, navigation }) {
   const { subjects, difficulty, timePerQuestion, numQuestions } = route.params;
   const [possibleCoins, setPossibleCoins] = useState(0);
   const [loading, setLoading] = useState(false);
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const calculatePossibleCoins = () => {
@@ -72,62 +74,64 @@ export default function QuizInstructions({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Header with Back Button */}
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={32} color={Colors.PRIMARY} />
+        <View style={[styles.header, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_HEADER }]}>
+          <TouchableOpacity style={[styles.backButton, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BUTTON }]} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={32} color={colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Quiz Instructions</Text>
+          <Text style={[styles.headerTitle, { color: colorScheme === 'light' ? '#fff' : Colors.WHITE }]}>Quiz Instructions</Text>
           <Image source={DesignUi3} style={styles.headerImage} />
         </View>
 
         {/* Instructions Content */}
         <View style={styles.content}>
-          <Text style={styles.label}>Selected Subjects:</Text>
+          <Text style={[styles.label, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Selected Subjects:</Text>
           <View style={styles.infoContainer}>
             {subjects.map((subject, index) => (
-              <Text key={index} style={[styles.infoText, { color: Colors.PRIMARY }]}><Feather name="check-circle" size={16} color={Colors.SECONDARY} style={{ marginRight: 5 }} /> {subject}</Text>
+              <Text key={index} style={[styles.infoText, { color: colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE }]}>
+                <Feather name="check-circle" size={16} color={Colors.SECONDARY} style={{ marginRight: 10 }} /> {subject}
+              </Text>
             ))}
           </View>
 
-          <Text style={styles.label}>Quiz Details:</Text>
+          <Text style={[styles.label, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Quiz Details:</Text>
           <View style={styles.infoContainer}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={styles.infoText}>Total Number of Questions: </Text>
-              <Text style={[styles.infoText, { color: Colors.PRIMARY }]}> {numQuestions}</Text>
+              <Text style={[styles.infoText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Total Number of Questions: </Text>
+              <Text style={[styles.infoText, { color: colorScheme === 'light' ? Colors.PRIMARY : Colors.LIGHT_TEXT }]}> {numQuestions}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={styles.infoText}>Time per Question:</Text>
-              <Text style={[styles.infoText, { color: Colors.PRIMARY }]}>  {timePerQuestion} seconds</Text>
+              <Text style={[styles.infoText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Time per Question:</Text>
+              <Text style={[styles.infoText, { color: colorScheme === 'light' ? Colors.PRIMARY : Colors.LIGHT_TEXT }]}>  {timePerQuestion} seconds</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={styles.infoText}>Difficulty Level:</Text>
-              <Text style={[styles.infoText, { color: Colors.PRIMARY }]}>  {difficulty}</Text>
+              <Text style={[styles.infoText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Difficulty Level:</Text>
+              <Text style={[styles.infoText, { color: colorScheme === 'light' ? Colors.PRIMARY : Colors.LIGHT_TEXT }]}>  {difficulty}</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={styles.infoText}>Possible Coins to be Earned: </Text>
-              <Text style={[styles.infoText, { color: Colors.PRIMARY }]}>  {possibleCoins}</Text>
+              <Text style={[styles.infoText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Possible Coins to be Earned: </Text>
+              <Text style={[styles.infoText, { color: colorScheme === 'light' ? Colors.PRIMARY : Colors.LIGHT_TEXT }]}>  {possibleCoins}</Text>
             </View>
           </View>
 
-          <Text style={styles.label}>Instructions:</Text>
+          <Text style={[styles.label, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Instructions:</Text>
           <View style={styles.instructionsContainer}>
-            <Text style={styles.instructionItem}>✔ Read each question carefully.</Text>
-            <Text style={styles.instructionItem}>✔ Answer all questions to the best of your ability.</Text>
-            <Text style={styles.instructionItem}>✔ Manage your time efficiently.</Text>
-            <Text style={styles.instructionItem}>✔ Check your answers before submission.</Text>
+            <Text style={[styles.instructionItem, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>✔ Read each question carefully.</Text>
+            <Text style={[styles.instructionItem, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>✔ Answer all questions to the best of your ability.</Text>
+            <Text style={[styles.instructionItem, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>✔ Manage your time efficiently.</Text>
+            <Text style={[styles.instructionItem, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>✔ Check your answers before submission.</Text>
           </View>
         </View>
       </ScrollView>
 
       {/* Custom Start Quiz Button */}
-      <TouchableOpacity style={styles.startButton} onPress={handleStartQuiz} disabled={loading}>
+      <TouchableOpacity style={[styles.startButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BUTTON }]} onPress={handleStartQuiz} disabled={loading}>
         {loading ? (
           <ActivityIndicator size="small" color={Colors.WHITE} />
         ) : (
-          <Text style={styles.startButtonText}>Start Quiz</Text>
+          <Text style={[styles.startButtonText, { color: colorScheme === 'light' ? Colors.WHITE : Colors.DARK_TEXT }]}>Start Quiz</Text>
         )}
       </TouchableOpacity>
     </View>
@@ -137,7 +141,6 @@ export default function QuizInstructions({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   scrollContainer: {
     paddingBottom: screenHeight * 0.1, // Add space for the fixed button
@@ -145,7 +148,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.PRIMARY,
     paddingHorizontal: 20,
     paddingTop: 20,
     height: screenHeight * 0.35, // Keep header height
@@ -159,14 +161,12 @@ const styles = StyleSheet.create({
     left: 20,
     top: 80,
     zIndex: 1,
-    backgroundColor: '#fff',
     borderRadius: 50,
     padding: 5,
   },
   headerTitle: {
     fontSize: screenWidth * 0.05,
     fontFamily: 'Poppins-Medium',
-    color: '#fff',
     textAlign: 'center',
     flex: 1,
   },
@@ -186,7 +186,6 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins-Medium',
     marginVertical: 10,
-    color: Colors.SECONDARY,
   },
   infoContainer: {
     marginBottom: 20,
@@ -194,7 +193,6 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
     marginVertical: 5,
   },
   instructionsContainer: {
@@ -203,7 +201,6 @@ const styles = StyleSheet.create({
   instructionItem: {
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
     marginVertical: 5,
   },
   startButton: {
@@ -211,7 +208,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: Colors.PRIMARY,
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -220,6 +216,5 @@ const styles = StyleSheet.create({
   startButtonText: {
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins-Medium',
-    color: Colors.WHITE,
   },
 });

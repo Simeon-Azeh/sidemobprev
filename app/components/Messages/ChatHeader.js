@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,12 +12,15 @@ import {
 import Icon from 'react-native-vector-icons/Feather';
 import Colors from '../../../assets/Utils/Colors';
 import { useNavigation } from '@react-navigation/native';
+import { useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function ChatHeader({ chat }) {
   const navigation = useNavigation();
   const [isModalVisible, setModalVisible] = useState(false);
+  const colorScheme = useColorScheme();
 
   const handleProfilePageNavigation = () => {
     navigation.navigate('ProfilePage', { user: chat });
@@ -56,32 +59,36 @@ export default function ChatHeader({ chat }) {
   };
 
   return (
-    <View style={styles.headerContainer}>
+    <View style={[styles.headerContainer, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND, borderBottomColor: colorScheme === 'light' ? '#ddd' : Colors.DARK_BORDER }]}>
+      <StatusBar
+        style={colorScheme === 'light' ? 'dark' : 'light'}
+        backgroundColor={colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND}
+      />
       <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Icon name="chevron-left" size={30} color={Colors.SECONDARY} />
+        <Icon name="chevron-left" size={30} color={colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE} />
       </TouchableOpacity>
       <TouchableOpacity onPress={handleProfilePageNavigation} style={styles.profileContainer}>
         <Image source={{ uri: chat.profileImage }} style={styles.profileImage} />
         <View style={styles.headerTextContainer}>
-          <Text style={styles.chatName}>{chat.name.split(' ')[0]}</Text>
+          <Text style={[styles.chatName, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>{chat.name.split(' ')[0]}</Text>
         </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.ellipsisButton}>
-        <Icon name="more-vertical" size={25} color={Colors.SECONDARY} />
+        <Icon name="more-vertical" size={25} color={colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE} />
       </TouchableOpacity>
 
       {/* Actions Modal */}
       <Modal visible={isModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Actions</Text>
+          <View style={[styles.modalContent, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY }]}>
+            <Text style={[styles.modalTitle, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Actions</Text>
             {['View Profile', 'Block User', 'Report User', 'Mute Notifications', 'Delete Chat'].map((action) => (
               <TouchableOpacity
                 key={action}
                 style={styles.modalOption}
                 onPress={() => handleAction(action)}
               >
-                <Text style={styles.modalOptionText}>{action}</Text>
+                <Text style={[styles.modalOptionText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>{action}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity
@@ -102,11 +109,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 10,
-    backgroundColor: '#fff',
     marginBottom: 10,
     width: '100%',
     borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    
   },
   backButton: {
     paddingRight: 10,
@@ -128,7 +134,6 @@ const styles = StyleSheet.create({
   chatName: {
     fontSize: 18,
     fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
   },
   ellipsisButton: {
     paddingHorizontal: 10,
@@ -141,7 +146,6 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: screenWidth * 0.8,
-    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 20,
     alignItems: 'center',
@@ -149,7 +153,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
     marginBottom: 20,
   },
   modalOption: {
@@ -159,7 +162,6 @@ const styles = StyleSheet.create({
   },
   modalOptionText: {
     fontSize: 16,
-    color: Colors.SECONDARY,
     fontFamily: 'Poppins-Medium',
   },
   modalCancel: {

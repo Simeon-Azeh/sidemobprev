@@ -5,6 +5,8 @@ export default {
     SECONDARY: '#404660',
     GRAY: '#D9D9D9',
     LIGHT_GRAY: '#F9FEFF',
+    LIGHT_BACKGROUND: '#f2f2f2',
+    LIGHT_TEXT: '#888',
 
     // Dark Mode Colors
     DARK_BACKGROUND: '#121212',  // Dark background for the app

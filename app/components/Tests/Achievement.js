@@ -4,8 +4,9 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 import Colors from '../../../assets/Utils/Colors';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
-
+import { useColorScheme } from 'react-native';
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+  
 
 const Achievement = () => {
   const [loading, setLoading] = useState(true);
@@ -14,6 +15,7 @@ const Achievement = () => {
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [wrongAnswers, setWrongAnswers] = useState(0);
   const [betterThanPercent, setBetterThanPercent] = useState(0);
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const fetchLatestResult = async () => {
@@ -69,15 +71,15 @@ const Achievement = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color={Colors.PRIMARY} />
-      </View>
+      <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
+              <ActivityIndicator size="large" color="#9835ff" />
+            </View>
     );
   }
 
   if (lastScore === null) {
     return (
-      <View style={styles.container}>
+       <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
         <Icon name="info-circle" size={42} color={Colors.SECONDARY} style={styles.icon} />
         <Text style={styles.noDataText}>No achievement data available.</Text>
       </View>
@@ -85,34 +87,59 @@ const Achievement = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.scoreContainer}>
-        <Text style={styles.scoreTitle}>Congratulations! You scored</Text>
-        <Text style={styles.score}>{lastScore}</Text>
-        <Text style={styles.scoreTitle}>on your last attempt</Text>
-        <Text style={styles.encouragingText}>
-          You performed better than {betterThanPercent}% of users. Keep up the great work!
-        </Text>
-      </View>
-
-      <View style={styles.statsContainer}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            colorScheme === 'light'
+              ? Colors.LIGHT_BACKGROUND
+              : Colors.DARK_BACKGROUND,
+        },
+      ]}
+    >
+     
+     <Text style={[styles.title, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>
+  Your last performance
+</Text>
+      <View style={[styles.statsContainer, { borderColor: colorScheme === 'light' ? '#e0e0e0' : Colors.DARK_BORDER, backgroundColor: colorScheme === 'light' ? '#f8f8f8' : Colors.DARK_SECONDARY }]}>
         <View style={styles.statItem}>
-          <Icon name="question-circle" size={20} color='gray' />
-          <Text style={styles.statText}>Questions: {totalQuestions}</Text>
+          <Icon name="question-circle" size={20} color="gray" />
+          <Text style={[styles.statText,{ color: colorScheme === 'light' ? '#444' : Colors.DARK_TEXT} ]}>Questions: </Text>
+          <Text style={[styles.statTitle, {color: colorScheme === 'light' ? '#9835ff' : Colors.DARK_TEXT}]}> {totalQuestions}</Text>
         </View>
         <View style={styles.statItem}>
           <Icon name="check-circle" size={20} color={Colors.PRIMARY} />
-          <Text style={styles.statText}>Correct: {correctAnswers}</Text>
+          <Text style={[styles.statText,{ color: colorScheme === 'light' ? '#444' : Colors.DARK_TEXT} ]}>Correct: </Text>
+          <Text style={[styles.statTitle, {color: colorScheme === 'light' ? '#9835ff' : Colors.DARK_TEXT}]}> {correctAnswers}</Text>
         </View>
         <View style={styles.statItem}>
           <Icon name="times-circle" size={20} color="#ff0000" />
-          <Text style={styles.statText}>Wrong: {wrongAnswers}</Text>
+          <Text style={[styles.statText,{ color: colorScheme === 'light' ? '#444' : Colors.DARK_TEXT} ]}>Wrong: </Text>
+          <Text style={[styles.statTitle, {color: colorScheme === 'light' ? '#ff0000' : Colors.DARK_TEXT}]}> {wrongAnswers}</Text>
         </View>
       </View>
 
-      <TouchableOpacity style={styles.shareButton} onPress={onShare}>
-        <Text style={styles.shareText}>Share Achievement</Text>
-      </TouchableOpacity>
+      <TouchableOpacity 
+  style={[
+    styles.shareButton, 
+    { 
+      backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BUTTON, 
+      borderColor: colorScheme === 'light' ? 'transparent' : Colors.DARK_BORDER, 
+      borderWidth: colorScheme === 'light' ? 0 : 1 
+    }
+  ]} 
+  onPress={onShare}
+>
+  <Text
+    style={[
+      styles.shareText,
+      { color: colorScheme === 'light' ? '#fff' : Colors.DARK_TEXT },
+    ]}
+  >
+    Share Achievement
+  </Text>
+</TouchableOpacity>
     </View>
   );
 };
@@ -125,29 +152,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     alignItems: 'center',
   },
-  scoreContainer: {
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  scoreTitle: {
-    fontSize: screenWidth * 0.04,
-    fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
-    textAlign: 'center',
-    marginVertical: 5,
-  },
-  score: {
-    fontSize: screenWidth * 0.08,
-    fontFamily: 'Poppins-Bold',
-    color: Colors.PRIMARY,
-    backgroundColor: '#eaf4fc',
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderRadius: 50,
-    marginVertical: 10,
-    textAlign: 'center',
-    width: screenWidth * 0.4,
-  },
+
   encouragingText: {
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins',
@@ -177,7 +182,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   shareButton: {
-    marginTop: 20,
+    marginTop: 10,
     paddingVertical: 12,
     paddingHorizontal: 25,
     backgroundColor: Colors.PRIMARY,
@@ -201,6 +206,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Poppins-Medium',
     color: Colors.SECONDARY,
     textAlign: 'center',
+  },
+  statTitle : {
+    fontSize: screenWidth * 0.045,
+    fontFamily: 'Poppins-SemiBold',
+    color: Colors.PRIMARY,
+    textAlign: 'center',
+  },
+  title: {
+    fontSize: screenWidth * 0.05,
+    fontFamily: 'Poppins-Medium',
+    color: Colors.PRIMARY,
+    marginBottom: 10,
   },
 });
 

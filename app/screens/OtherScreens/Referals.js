@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Dimensions, Clipboard, Alert } from 'react-native';
 import Header from '../../components/General/Header';
 import referralImage from '../../../assets/Images/ReferImg.png'; // Replace with your image path
 import Icon from 'react-native-vector-icons/Feather'; // Import Feather icons
-import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Colors from '../../../assets/Utils/Colors';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const referralLink = 'https://sidecedu.com/referral'; // Example referral link
 
 export default function Referrals() {
   const [copied, setCopied] = useState(false);
+  const colorScheme = useColorScheme();
 
   const handleCopy = () => {
+    Clipboard.setString(referralLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000); // Reset "Copied" state after 2 seconds
+    Alert.alert('Copied to Clipboard', 'Referral link has been copied to your clipboard.');
   };
 
   const referralTimeline = [
@@ -29,18 +32,18 @@ export default function Referrals() {
   ];
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }}>
       <Header />
       <ScrollView contentContainerStyle={styles.scrollViewContainer}>
         <View style={styles.container}>
           <View style={styles.referralSection}>
             <Image source={referralImage} style={styles.referralImage} />
-            <Text style={styles.title}>Refer and Earn</Text>
-            <Text style={styles.description}>
+            <Text style={[styles.title, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Refer and Earn</Text>
+            <Text style={[styles.description, { color: colorScheme === 'light' ? '#888' : '#ccc' }]}>
               Invite your friends to join and earn rewards. Share your unique referral link and start earning!
             </Text>
-            <View style={styles.linkContainer}>
-              <Text style={styles.link}>{referralLink}</Text>
+            <View style={[styles.linkContainer, { borderColor: colorScheme === 'light' ? '#ccc' : Colors.DARK_BORDER }]}>
+              <Text style={[styles.link, { color: colorScheme === 'light' ? '#9835ff' : Colors.PRIMARY }]}>{referralLink}</Text>
               <TouchableOpacity onPress={handleCopy} style={styles.copyButton}>
                 <Icon 
                   name={copied ? 'check' : 'copy'} 
@@ -53,33 +56,32 @@ export default function Referrals() {
             </View>
           </View>
           <View style={styles.timelineSection}>
-            <Text style={styles.sectionTitle}>How It Works</Text>
+            <Text style={[styles.sectionTitle, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>How It Works</Text>
             {referralTimeline.map((item, index) => (
               <View key={index} style={styles.timelineItem}>
-                <View style={styles.timelineDot} />
+                <View style={[styles.timelineDot, { backgroundColor: colorScheme === 'light' ? '#9835ff' : Colors.PRIMARY }]} />
                 <View style={styles.timelineContent}>
-                  <Text style={styles.timelineStage}>{item.stage}</Text>
-                  <Text style={styles.timelineDescription}>{item.description}</Text>
+                  <Text style={[styles.timelineStage, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>{item.stage}</Text>
+                  <Text style={[styles.timelineDescription, { color: colorScheme === 'light' ? '#888' : '#ccc' }]}>{item.description}</Text>
                 </View>
                 {index < referralTimeline.length - 1 && (
-                  <View style={styles.timelineLine} />
+                  <View style={[styles.timelineLine, { backgroundColor: colorScheme === 'light' ? '#ddd' : Colors.DARK_BORDER }]} />
                 )}
               </View>
             ))}
           </View>
           <View style={styles.referredSection}>
-            <Text style={styles.sectionTitle}>Referred People</Text>
+            <Text style={[styles.sectionTitle, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Referred People</Text>
             {referredPeople.map((person, index) => (
               <View key={index} style={styles.referredItem}>
                 <View style={styles.referredPersonInfo}>
-                  <Text style={styles.referredName}>{person.name}</Text>
+                  <Text style={[styles.referredName, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>{person.name}</Text>
                   <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <Icon name="dollar-sign" size={16} color="#9835ff" style={styles.coinIcon} />
-                  <Text style={styles.sideCoinText}>+10 Sidecoin</Text>
+                    <Icon name="dollar-sign" size={16} color="#9835ff" style={styles.coinIcon} />
+                    <Text style={styles.sideCoinText}>+10 Sidecoin</Text>
                   </View>
-                
                 </View>
-                <Text style={styles.referredEmail}>{person.email}</Text>
+                <Text style={[styles.referredEmail, { color: colorScheme === 'light' ? '#888' : '#ccc' }]}>{person.email}</Text>
               </View>
             ))}
           </View>
@@ -95,7 +97,6 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
     padding: 20,
   },
   referralSection: {
@@ -110,13 +111,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: screenWidth * 0.06,
     fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
-    marginBottom: 10,
   },
   description: {
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins',
-    color: '#888',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -125,14 +123,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 5,
     padding: 8,
   },
   link: {
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins',
-    color: '#9835ff',
     flex: 1,
   },
   copyButton: {
@@ -159,7 +155,6 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.04,
     fontFamily: 'Poppins-Medium',
     marginBottom: 10,
-    color: Colors.SECONDARY,
   },
   timelineItem: {
     flexDirection: 'row',
@@ -170,7 +165,6 @@ const styles = StyleSheet.create({
   timelineDot: {
     width: 10,
     height: 10,
-    backgroundColor: '#9835ff',
     borderRadius: 5,
     position: 'absolute',
     left: 10, // Position dot to overlap with the line
@@ -178,7 +172,6 @@ const styles = StyleSheet.create({
   },
   timelineLine: {
     width: 2,
-    backgroundColor: '#ddd',
     flexGrow: 1,
     marginLeft: 10,
     marginRight: 15,
@@ -194,7 +187,6 @@ const styles = StyleSheet.create({
   timelineDescription: {
     fontSize: screenWidth * 0.03,
     fontFamily: 'Poppins',
-    color: '#888',
   },
   referredSection: {
     marginBottom: 20,
@@ -209,7 +201,6 @@ const styles = StyleSheet.create({
   },
   referredName: {
     fontSize: screenWidth * 0.035,
-    color: Colors.SECONDARY,
     fontFamily: 'Poppins-Medium',
   },
   coinIcon: {
@@ -224,6 +215,5 @@ const styles = StyleSheet.create({
   referredEmail: {
     fontSize: screenWidth * 0.03,
     fontFamily: 'Poppins',
-    color: '#888',
   },
 });

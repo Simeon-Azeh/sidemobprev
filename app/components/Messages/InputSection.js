@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Text, Alert } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, Text, Alert, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Alticon from 'react-native-vector-icons/Entypo';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
@@ -8,11 +8,16 @@ import * as DocumentPicker from 'expo-document-picker';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { auth, storage, firestore } from '../../../firebaseConfig';
+import { useColorScheme } from 'react-native';
 
 export default function InputSection({ message, setMessage, handleSend, handleFileAttachment, setShowEmojiPicker, chatType }) {
   const [attachedFile, setAttachedFile] = useState(null);
+  const colorScheme = useColorScheme();
 
   const handleSendMessage = async () => {
+    const currentMessage = message;
+    setMessage(''); // Clear the message input field immediately
+
     if (attachedFile) {
       const user = auth.currentUser;
       const chatId = chatType === 'group' ? 'groupChatId' : 'individualChatId'; // Replace with actual chat ID logic
@@ -27,7 +32,7 @@ export default function InputSection({ message, setMessage, handleSend, handleFi
       });
       setAttachedFile(null); // Clear the attached file after sending the message
     } else {
-      handleSend(chatType === 'group' ? 'group' : 'individual');
+      handleSend(currentMessage, chatType === 'group' ? 'group' : 'individual');
     }
   };
 
@@ -70,7 +75,7 @@ export default function InputSection({ message, setMessage, handleSend, handleFi
   };
 
   return (
-    <View style={styles.inputContainer}>
+    <View style={[styles.inputContainer, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND, borderTopColor: colorScheme === 'light' ? '#eee' : Colors.DARK_BORDER }]}>
       {attachedFile && (
         <View style={styles.attachmentContainer}>
           <MaterialIcons name="attachment" size={25} color={Colors.SECONDARY} />
@@ -84,19 +89,22 @@ export default function InputSection({ message, setMessage, handleSend, handleFi
         >
           <Alticon name="emoji-happy" size={25} color={Colors.SECONDARY} />
         </TouchableOpacity>
-        <TextInput
-          placeholder="Type a message..."
-          value={message}
-          onChangeText={setMessage}
-          style={styles.textInput}
-          multiline
-          blurOnSubmit={false}
-        />
+        <ScrollView style={styles.textInputContainer} contentContainerStyle={{ flexGrow: 1 }} nestedScrollEnabled>
+          <TextInput
+            placeholder="Type a message..."
+            placeholderTextColor={colorScheme === 'light' ? '#888' : '#ccc'}
+            value={message}
+            onChangeText={setMessage}
+            style={[styles.textInput, { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : Colors.DARK_SECONDARY, color: colorScheme === 'light' ? '#000' : '#fff' }]}
+            multiline
+            blurOnSubmit={false}
+          />
+        </ScrollView>
         <TouchableOpacity style={styles.iconButton} onPress={handleFilePicker}>
           <MaterialIcons name="attach-file" size={25} color={Colors.SECONDARY} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.sendButton} onPress={handleSendMessage}>
-          <Icon name="send" size={25} color="#fff" />
+        <TouchableOpacity style={[styles.sendButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]} onPress={handleSendMessage}>
+          <Icon name="send" size={25} color={colorScheme === 'light' ? '#fff' : '#000'} />
         </TouchableOpacity>
       </View>
     </View>
@@ -106,13 +114,11 @@ export default function InputSection({ message, setMessage, handleSend, handleFi
 const styles = StyleSheet.create({
   inputContainer: {
     padding: 5,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    borderTopWidth: 1,
   },
   inputRow: {
     flexDirection: 'row',
@@ -121,18 +127,20 @@ const styles = StyleSheet.create({
   iconButton: {
     padding: 10,
   },
+  textInputContainer: {
+    flex: 1,
+    maxHeight: 100, // Limit the height of the input field
+  },
   textInput: {
     flex: 1,
     paddingVertical: 5,
     paddingHorizontal: 20,
-    backgroundColor: '#f0f0f0',
     borderRadius: 25,
     fontSize: 16,
     marginHorizontal: 5,
     fontFamily: 'Poppins',
   },
   sendButton: {
-    backgroundColor: Colors.PRIMARY,
     padding: 10,
     borderRadius: 50,
     marginHorizontal: 5,

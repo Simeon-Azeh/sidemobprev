@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, SectionList, StyleSheet, Dimensions, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, Text, TouchableOpacity, SectionList, StyleSheet, Dimensions, KeyboardAvoidingView, Platform, Image, StatusBar } from 'react-native';
 import Colors from '../../../assets/Utils/Colors';
 import { getAuth } from 'firebase/auth';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -13,6 +14,7 @@ export default function GroupMessageList({ messages, handleDeleteMessage, handle
   const soundRef = useRef(null);
   const previousMessagesLength = useRef(messages.length);
   const previousMessages = useRef(messages);
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const playSound = async () => {
@@ -108,7 +110,7 @@ export default function GroupMessageList({ messages, handleDeleteMessage, handle
           onLongPress={() => handleDeleteMessage(item.id)}
           style={[
             styles.messageBubble,
-            isSentByCurrentUser ? styles.userMessage : styles.receivedMessage,
+            isSentByCurrentUser ? userMessageStyle(colorScheme) : styles.receivedMessage,
             isSentByCurrentUser
               ? { borderBottomRightRadius: 0, borderBottomLeftRadius: 18 }
               : { borderTopLeftRadius: 0, borderBottomLeftRadius: 18 },
@@ -154,6 +156,7 @@ export default function GroupMessageList({ messages, handleDeleteMessage, handle
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}
     >
+      <StatusBar barStyle={colorScheme === 'light' ? 'dark-content' : 'light-content'} />
       <SectionList
         sections={sortedMessages}
         renderItem={renderMessage}
@@ -164,6 +167,16 @@ export default function GroupMessageList({ messages, handleDeleteMessage, handle
     </KeyboardAvoidingView>
   );
 }
+
+const userMessageStyle = (colorScheme) => ({
+  backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_SECONDARY,
+  borderRadius: 18,
+  padding: 12,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 4,
+});
 
 const styles = StyleSheet.create({
   chatList: {
@@ -206,15 +219,6 @@ const styles = StyleSheet.create({
   },
   receivedMessageContainer: {
     alignItems: 'flex-start',
-  },
-  userMessage: {
-    backgroundColor: Colors.PRIMARY,
-    borderRadius: 18,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
   },
   receivedMessage: {
     backgroundColor: '#ffffff',

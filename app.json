@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.kaycoder.sidecmobileapp",
-      "displayName": "Sidec" 
+      "displayName": "Sidec"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,13 +22,14 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.kaycoder.sidecmobileapp",
-      "label": "Sidec" 
+      "label": "Sidec"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-localization"
     ],
     "extra": {
       "eas": {

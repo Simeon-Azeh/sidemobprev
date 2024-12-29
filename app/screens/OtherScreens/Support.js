@@ -5,46 +5,43 @@ import Header from '../../components/General/Header';
 import { Feather } from '@expo/vector-icons'; // Import Feather icons
 import Colors from '../../../assets/Utils/Colors';
 import { useNavigation } from '@react-navigation/native';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 export default function Support() {
   const navigation = useNavigation();
+  const colorScheme = useColorScheme();
+
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      <View>
+    <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
       <Header />
-      </View>
-     <View style={styles.container}>
-     <View style={styles.greetingContainer}>
+      <View style={styles.greetingContainer}>
         <GreetingCard />
       </View>
       <View style={styles.supportOptions}>
-        <Text style={styles.supportTitle}>Need Support?</Text>
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Live Chat</Text>
-          <Feather name="chevron-right" size={24} color={styles.buttonText.color} />
+        <Text style={[styles.supportTitle, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Need Support?</Text>
+        <TouchableOpacity style={[styles.button, { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : Colors.DARK_BUTTON }]}>
+          <Text style={[styles.buttonText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Live Chat</Text>
+          <Feather name="chevron-right" size={24} color={colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('FAQS')}>
-          <Text style={styles.buttonText}>FAQs</Text>
-          <Feather name="chevron-right" size={24} color={styles.buttonText.color} />
+        <TouchableOpacity style={[styles.button, { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : Colors.DARK_BUTTON }]} onPress={() => navigation.navigate('FAQS')}>
+          <Text style={[styles.buttonText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>FAQs</Text>
+          <Feather name="chevron-right" size={24} color={colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Contact')}>
-          <Text style={styles.buttonText}>Contact Us</Text>
-          <Feather name="chevron-right" size={24} color={styles.buttonText.color} />
+        <TouchableOpacity style={[styles.button, { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : Colors.DARK_BUTTON }]} onPress={() => navigation.navigate('Contact')}>
+          <Text style={[styles.buttonText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Contact Us</Text>
+          <Feather name="chevron-right" size={24} color={colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE} />
         </TouchableOpacity>
       </View>
-     </View>
-    
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-   padding: 20,
-   backgroundColor: '#fff',
-   
+    flex: 1,
+    padding: 20,
   },
   greetingContainer: {
     marginVertical: 15,
@@ -56,14 +53,12 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.04,
     fontFamily: 'Poppins-Medium',
     marginBottom: 20,
-    color: Colors.SECONDARY,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 15,
     paddingHorizontal: 20,
-    backgroundColor: '#f0f0f0',
     borderRadius: 8,
     marginBottom: 10,
   },
@@ -71,6 +66,5 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
   },
 });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, StyleSheet, Modal, TouchableOpacity, Dimensions, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, Image, StyleSheet, Modal, TouchableOpacity, Dimensions, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Header from '../../components/General/Header';
@@ -10,6 +10,7 @@ import UpcomingTasks from '../../components/Discover/UpcomingTasks';
 import { useNavigation } from '@react-navigation/native';
 import { getFirestore, collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -18,8 +19,10 @@ export default function Discover() {
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const auth = getAuth();
   const currentUser = auth.currentUser;
+  const colorScheme = useColorScheme();
 
   const fetchLeaderboardData = async () => {
     setLoadingLeaderboard(true);
@@ -73,11 +76,22 @@ export default function Discover() {
     return () => clearInterval(interval); // Cleanup interval on component unmount
   }, []);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchLeaderboardData();
+    setRefreshing(false);
+  };
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
       <Header />
 
-      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollViewContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.PRIMARY]} />
+        }
+      >
         <View style={styles.leaderboardContainer}>
           <Image source={LeaderboardImg} style={styles.leaderboardImg} />
 
@@ -96,15 +110,15 @@ export default function Discover() {
                 ]}
               >
                 <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
-                <Text style={styles.username}>
+                <Text style={[styles.username, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>
                   {user.name}
                   {currentUser && currentUser.uid === user.id && (
                     <Ionicons name="sparkles-sharp" size={16} color="#9835ff" style={styles.currentUserIcon} />
                   )}
                 </Text>
                 <View style={styles.coinContainer}>
-                  <Icon name="coins" size={16} color="#9835ff" />
-                  <Text style={styles.coins}>+{user.coins}</Text>
+                  <Icon name="coins" size={16} color={colorScheme === 'light' ? '#9835ff' : '#fff'} />
+                  <Text style={[styles.coins, { color: colorScheme === 'light' ? '#888' : '#fff' }]}>+{user.coins}</Text>
                   <Icon
                     name={user.status === 'up' ? 'arrow-up' : 'arrow-down'}
                     size={16}
@@ -121,15 +135,15 @@ export default function Discover() {
           {leaderboardData.slice(3).map((user) => (
             <View key={user.id} style={styles.otherUserItem}>
               <Image source={{ uri: user.profileImage }} style={styles.profileImageSmall} />
-              <Text style={styles.usernameSmall}>
+              <Text style={[styles.usernameSmall, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>
                 {user.name}
                 {currentUser && currentUser.uid === user.id && (
                   <Ionicons name="sparkles-sharp" size={24} color="black" style={styles.currentUserIconSmall} />
                 )}
               </Text>
               <View style={styles.coinContainerSmall}>
-                <Icon name="coins" size={16} color="#9835ff" />
-                <Text style={styles.coinsSmall}>+{user.coins}</Text>
+                <Icon name="coins" size={16} color={colorScheme === 'light' ? '#9835ff' : '#fff'} />
+                <Text style={[styles.coinsSmall, { color: colorScheme === 'light' ? '#888' : '#fff' }]}>+{user.coins}</Text>
                 <Icon
                   name={user.status === 'up' ? 'arrow-up' : 'arrow-down'}
                   size={12}
@@ -142,12 +156,23 @@ export default function Discover() {
         </View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={{...styles.button, backgroundColor: '#fff', borderColor: '#9835ff', borderWidth: 1}} onPress={() => navigation.navigate('RedeemPage')} >
-            <Text style={{...styles.buttonText, color: '#9835ff'} }>Redeem Coins</Text>
+          <TouchableOpacity style={[styles.button, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BUTTON, borderColor: colorScheme === 'light' ? '#9835ff' : Colors.DARK_BORDER, borderWidth: 1 }]} onPress={() => navigation.navigate('RedeemPage')} >
+            <Text style={[styles.buttonText, {color: colorScheme === 'light' ? Colors.PRIMARY : '#fff'}]}>Redeem Coins</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={{...styles.button, backgroundColor: '#9835ff', marginLeft: 10}} onPress={() => navigation.navigate('RedeemedTicketsPage')} >
-            <Text style={{...styles.buttonText, color: '#fff'} }>View Tickets</Text>
-          </TouchableOpacity>
+          <TouchableOpacity 
+  style={[
+    styles.button, 
+    { 
+      backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BUTTON, 
+      marginLeft: 10, 
+      borderColor: colorScheme === 'light' ? 'transparent' : Colors.DARK_BORDER, 
+      borderWidth: colorScheme === 'light' ? 0 : 1 
+    }
+  ]} 
+  onPress={() => navigation.navigate('RedeemedTicketsPage')}
+>
+  <Text style={styles.buttonText}>View Tickets</Text>
+</TouchableOpacity>
         </View>
 
         <Modal
@@ -157,36 +182,41 @@ export default function Discover() {
           onRequestClose={() => setModalVisible(false)}
         >
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Welcome to the community!</Text>
-              <Text style={styles.modalText}>You're now part of the community! Take part by taking our mock test and join our leader board.</Text>
-              <TouchableOpacity style={styles.modalButton} onPress={() => setModalVisible(false)}>
+            <View style={[styles.modalContent, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY }]}>
+              <Text style={[styles.modalTitle, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Welcome to the community!</Text>
+              <Text style={[styles.modalText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>You're now part of the community! Take part by taking our mock test and join our leader board.</Text>
+              <TouchableOpacity style={[styles.modalButton, { backgroundColor: '#9835ff' }]} onPress={() => setModalVisible(false)}>
                 <Text style={styles.modalButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
           </View>
         </Modal>
 
-        <View style={styles.calendarContainer}>
-          <Calendar
-            current={new Date().toISOString().split('T')[0]}
-            theme={{
-              todayButtonTextColor: Colors.PRIMARY,
-              arrowColor: Colors.PRIMARY,
-              monthTextColor: Colors.SECONDARY,
-              textDayHeaderFontFamily: 'Poppins-Medium',
-              textMonthFontFamily: 'Poppins-Medium',
-              textDayFontFamily: 'Poppins-Medium',
-              textDayFontSize: screenWidth * 0.03,
-              textDayHeaderFontSize: screenWidth * 0.03,
-              textMonthFontSize: screenWidth * 0.04,
-              textMonthFontWeight: 'normal',
-              todayTextColor: '#fff',
-              todayBackgroundColor: Colors.PRIMARY,
-              selectedDayTextColor: '#fff',
-              selectedDayBackgroundColor: '#9835ff',
-            }}
-          />
+        <View style={[styles.calendarContainer, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY }]}>
+        <Calendar
+  current={new Date().toISOString().split('T')[0]}
+  theme={{
+    backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY,
+    calendarBackground: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY,
+    todayButtonTextColor: Colors.PRIMARY,
+    arrowColor: Colors.PRIMARY,
+    monthTextColor: colorScheme === 'light' ? Colors.SECONDARY : '#fff',
+    textDayHeaderFontFamily: 'Poppins-Medium',
+    textMonthFontFamily: 'Poppins-Medium',
+    textDayFontFamily: 'Poppins-Medium',
+    textDayFontSize: screenWidth * 0.03,
+    textDayHeaderFontSize: screenWidth * 0.03,
+    textMonthFontSize: screenWidth * 0.04,
+    textMonthFontWeight: 'normal',
+    todayTextColor: colorScheme === 'light' ? '#fff' : '#fff',
+    todayBackgroundColor: Colors.PRIMARY,
+    selectedDayTextColor: colorScheme === 'light' ? '#fff' : '#000',
+    selectedDayBackgroundColor: colorScheme === 'light' ? '#9835ff' : '#fff',
+    dayTextColor: colorScheme === 'light' ? Colors.SECONDARY : '#fff',
+    textDisabledColor: colorScheme === 'light' ? '#d9e1e8' : '#555',
+    textSectionTitleColor: colorScheme === 'light' ? Colors.SECONDARY : '#ccc',
+  }}
+/>
         </View>
       </ScrollView>
     </View>
@@ -196,7 +226,6 @@ export default function Discover() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   scrollViewContent: {
     paddingBottom: 20,
@@ -222,7 +251,6 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.03,
     fontFamily: 'Poppins-Medium',
     marginTop: 2,
-    color: Colors.SECONDARY,
   },
   currentUserIcon: {
     marginLeft: 5,
@@ -234,7 +262,6 @@ const styles = StyleSheet.create({
   },
   coins: {
     fontSize: screenWidth * 0.03,
-    color: '#888',
     marginLeft: 5,
     fontFamily: 'Poppins-Medium',
   },
@@ -259,7 +286,6 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.03,
     fontFamily: 'Poppins-Medium',
     marginLeft: 10,
-    color: Colors.SECONDARY,
   },
   currentUserIconSmall: {
     marginLeft: 5,
@@ -271,7 +297,6 @@ const styles = StyleSheet.create({
   },
   coinsSmall: {
     fontSize: screenWidth * 0.03,
-    color: '#888',
     marginLeft: 5,
     fontFamily: 'Poppins-Medium',
   },
@@ -284,15 +309,14 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   button: {
-    backgroundColor: Colors.PRIMARY,
     paddingVertical: 10,
     paddingHorizontal: 40,
     borderRadius: 5,
   },
   buttonText: {
-    color: '#fff',
     fontSize: screenWidth * 0.04,
     fontFamily: 'Poppins-Medium',
+    color: '#fff',
   },
   modalContainer: {
     flex: 1,
@@ -303,14 +327,12 @@ const styles = StyleSheet.create({
   modalContent: {
     width: '80%',
     padding: 20,
-    backgroundColor: '#fff',
     borderRadius: 10,
     alignItems: 'center',
   },
   modalTitle: {
     fontSize: screenWidth * 0.045,
     fontFamily: 'Poppins-SemiBold',
-    color: Colors.SECONDARY,
     marginBottom: 10,
   },
   modalText: {
@@ -318,10 +340,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'Poppins-Medium',
     marginBottom: 20,
-    color: Colors.SECONDARY,
   },
   modalButton: {
-    backgroundColor: '#9835ff',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,

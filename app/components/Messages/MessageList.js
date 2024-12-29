@@ -4,6 +4,8 @@ import Colors from '../../../assets/Utils/Colors';
 import { getAuth } from 'firebase/auth';
 import { Ionicons } from '@expo/vector-icons';
 import { Audio } from 'expo-av';
+import { useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -14,6 +16,7 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
   const previousMessagesLength = useRef(messages.length);
   const previousMessages = useRef(messages);
   const sectionListRef = useRef(null);
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const playSound = async () => {
@@ -83,7 +86,7 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
   const renderMessage = ({ item }) => {
     const isSentByCurrentUser = item.sentByUser === currentUser.email;
     const messageText = item.text || 'Message not available';
-  
+
     const renderCheckMarks = () => {
       if (isSentByCurrentUser) {
         return (
@@ -98,7 +101,7 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
       }
       return null;
     };
-  
+
     return (
       <View
         style={[
@@ -111,22 +114,21 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
           onLongPress={() => handleDeleteMessage(item.id)}
           style={[
             styles.messageBubble,
-            isSentByCurrentUser ? styles.userMessage : styles.receivedMessage,
+            isSentByCurrentUser ? userMessageStyle(colorScheme) : receivedMessageStyle(colorScheme),
             isSentByCurrentUser
               ? { borderBottomRightRadius: 0, borderBottomLeftRadius: 18 }
               : { borderTopLeftRadius: 0, borderBottomLeftRadius: 18 },
           ]}
         >
-          <View style={styles.messageContentRow}>
+          <View style={styles.messageContent}>
             <Text
               style={[
                 styles.messageText,
-                isSentByCurrentUser ? styles.userMessageText : styles.receivedMessageText,
+                isSentByCurrentUser ? styles.userMessageText : receivedMessageTextStyle(colorScheme),
               ]}
             >
               {messageText}
             </Text>
-            <View style={{ width: 8 }} />
             <Text
               style={[
                 styles.messageTime,
@@ -143,7 +145,7 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
       </View>
     );
   };
-  
+
   const renderSectionHeader = ({ section: { title } }) => (
     <View style={styles.sectionHeader}>
       <View style={styles.line} />
@@ -164,6 +166,7 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}
     >
+      <StatusBar barStyle={colorScheme === 'light' ? 'dark-content' : 'light-content'} />
       <SectionList
         ref={sectionListRef}
         sections={sortedMessages}
@@ -186,6 +189,32 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
     </KeyboardAvoidingView>
   );
 }
+
+const userMessageStyle = (colorScheme) => ({
+  backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_SECONDARY,
+  borderRadius: 18,
+  padding: 8, // Reduced padding
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.2,
+  shadowRadius: 4,
+});
+
+const receivedMessageStyle = (colorScheme) => ({
+  backgroundColor: colorScheme === 'light' ? '#ffffff' : '#333333', // Adjusted color for dark mode
+  borderColor: colorScheme === 'light' ? '#ddd' : '#444444', // Adjusted border color for dark mode
+  borderWidth: 1,
+  borderRadius: 18,
+  padding: 8, // Reduced padding
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 3,
+});
+
+const receivedMessageTextStyle = (colorScheme) => ({
+  color: colorScheme === 'light' ? '#444' : '#ccc', // Darker color for light mode, lighter color for dark mode
+});
 
 const styles = StyleSheet.create({
   chatList: {
@@ -212,14 +241,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
   },
   messageContainer: {
-    marginVertical: 2,
+    marginVertical: 4, // Reduced margin to decrease spacing between messages
     flexDirection: 'row',
     alignItems: 'flex-end',
     maxWidth: '100%',
-    paddingHorizontal: 12,
+    paddingHorizontal: 8, // Reduced padding
   },
   messageBubble: {
-    padding: 12,
+    padding: 8, // Reduced padding
     borderRadius: 18,
     maxWidth: '85%',
   },
@@ -229,52 +258,28 @@ const styles = StyleSheet.create({
   receivedMessageContainer: {
     justifyContent: 'flex-start',
   },
-  userMessage: {
-    backgroundColor: Colors.PRIMARY,
-    borderRadius: 18,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-  },
-  receivedMessage: {
-    backgroundColor: '#ffffff',
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 18,
-    padding: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  messageContentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+  messageContent: {
+    flexDirection: 'column',
   },
   messageText: {
-    fontSize: screenWidth * 0.035,
+    fontSize: screenWidth * 0.03, // Reduced font size
     fontFamily: 'Poppins-Medium',
-    lineHeight: 20,
+    lineHeight: 18, // Reduced line height
+    flexShrink: 1, // Ensure text shrinks if necessary
   },
   userMessageText: {
     color: '#fff',
   },
-  receivedMessageText: {
-    color: '#444',
-  },
   messageFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 5,
+    marginTop: 3, // Reduced margin
   },
   messageTime: {
-    fontSize: 9,
-    marginRight: 8,
+    fontSize: 8, // Reduced font size
+    marginTop: 2, // Reduced margin
     fontFamily: 'Poppins',
-    marginTop: 5,
+    alignSelf: 'flex-end', // Align to the right
   },
   userMessageTime: {
     color: '#fff',

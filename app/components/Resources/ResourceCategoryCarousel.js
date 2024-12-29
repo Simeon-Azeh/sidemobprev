@@ -1,42 +1,144 @@
-// Components/Resources/ResourceCategoryCarousel.js
-import React from 'react';
-import { View, Text, Image, Dimensions, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import Carousel from 'react-native-snap-carousel';
-import { MaterialIcons } from '@expo/vector-icons';
-import Entypo from '@expo/vector-icons/Entypo';
+import { MaterialIcons, Entypo, FontAwesome } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useColorScheme } from 'react-native';
+import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 import Colors from '../../../assets/Utils/Colors';
 
 const { width: screenWidth } = Dimensions.get('window');
 const itemWidth = screenWidth * 0.6;
 
-const ResourceCategoryCarousel = ({ title, data }) => {
-  const navigation = useNavigation(); // Initialize navigation hook
+const capitalizeFirstLetter = (string) => {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+};
 
-  const handlePress = (item) => {
-    navigation.navigate('ResourceData', { resource: item });
+const ResourceCategoryCarousel = ({ title, data }) => {
+  const [viewMode, setViewMode] = useState('carousel'); // Default view mode
+  const navigation = useNavigation(); // Initialize navigation hook
+  const colorScheme = useColorScheme(); // Get the current color scheme
+
+  const handlePress = async (item) => {
+    const db = getFirestore();
+    const docRef = doc(db, 'pdfDocuments', item.id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const fileURL = docSnap.data().fileURL;
+      navigation.navigate('ResourceDocs', {
+        fileURL,
+        title: item.title,
+        exam: item.exam,
+        year: item.year,
+        level: item.level,
+      });
+    } else {
+      console.log('No such document!');
+    }
   };
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
       onPress={() => handlePress(item)}
-      style={{ backgroundColor: '#fff', borderRadius: 8, overflow: 'hidden', padding: 10, width: itemWidth, marginHorizontal: screenWidth * -0.16 }}
+      style={[
+        styles.itemContainer,
+        { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY },
+      ]}
     >
-      <Image source={{ uri: item.image }} style={{ width: screenWidth * 0.56, height: screenWidth * 0.35, borderRadius: 8 }} />
-      <View style={{ padding: 10 }}>
-        <Text style={{ fontSize: screenWidth * 0.035, fontFamily: 'Poppins-Medium', color: Colors.SECONDARY }}>{item.subject}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-          <MaterialIcons name="library-books" size={20} color="#9835ff" />
-          <Text style={{ marginLeft: 5, fontSize: 14, color: '#9835ff', fontFamily: 'Poppins-Medium' }}>{item.examType}</Text>
+      <View style={styles.imageContainer}>
+        <Text style={styles.imageText}>{`Q ${item.year}`}</Text>
+      </View>
+      <View style={styles.textContainer}>
+        <Text style={[styles.subject, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}>
+          {capitalizeFirstLetter(item.title)}
+        </Text>
+        <View style={styles.row}>
+          <FontAwesome name="book" size={20} color={colorScheme === 'light' ? '#9835ff' : '#fff'} />
+          <Text style={[styles.examType, { color: colorScheme === 'light' ? '#9835ff' : '#fff' }]}>
+            {item.exam ? item.exam.toUpperCase() : item.title.toUpperCase()}
+          </Text>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-          <Entypo name="line-graph" size={18} color="#a9a9a9" />
-          <Text style={{ fontSize: 14, color: '#a9a9a9', marginLeft: 2, fontFamily: 'Poppins-Medium' }}>{item.level}</Text>
+        <View style={styles.row}>
+          <FontAwesome name="line-chart" size={18} color={colorScheme === 'light' ? '#a9a9a9' : '#fff'} />
+          <Text style={[styles.level, { color: colorScheme === 'light' ? '#a9a9a9' : '#fff' }]}>{item.level}</Text>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 5 }}>
-          <MaterialIcons name="star" size={20} color="#f1c40f" />
-          <Text style={{ marginLeft: 5, fontSize: 14, color: '#a9a9a9', fontFamily: 'Poppins-Medium' }}>{item.ratings} ({item.reviews} reviews)</Text>
+        <View style={styles.row}>
+          <FontAwesome name="file-text" size={20} color={colorScheme === 'light' ? '#a9a9a9' : '#fff'} />
+          <Text style={[styles.details, { color: colorScheme === 'light' ? '#a9a9a9' : '#fff' }]}>
+            {`${item.paper ? item.paper.toUpperCase() : 'UNKNOWN'} ${item.year}`}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderGridItem = ({ item }) => (
+    <TouchableOpacity
+      onPress={() => handlePress(item)}
+      style={[
+        styles.gridItemContainer,
+        { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY },
+      ]}
+    >
+      <View style={styles.imageContainer}>
+        <Text style={styles.imageText}>{`Q ${item.year}`}</Text>
+      </View>
+      <View style={styles.textContainer}>
+        <Text style={[styles.subject, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}>
+          {capitalizeFirstLetter(item.title)}
+        </Text>
+        <View style={styles.row}>
+          <FontAwesome name="book" size={20} color={colorScheme === 'light' ? '#9835ff' : '#fff'} />
+          <Text style={[styles.examType, { color: colorScheme === 'light' ? '#9835ff' : '#fff' }]}>
+            {item.exam ? item.exam.toUpperCase() : item.title.toUpperCase()}
+          </Text>
+        </View>
+        <View style={styles.row}>
+          <FontAwesome name="line-chart" size={18} color={colorScheme === 'light' ? '#a9a9a9' : '#fff'} />
+          <Text style={[styles.level, { color: colorScheme === 'light' ? '#a9a9a9' : '#fff' }]}>{item.level}</Text>
+        </View>
+        <View style={styles.row}>
+          <FontAwesome name="file-text" size={20} color={colorScheme === 'light' ? '#a9a9a9' : '#fff'} />
+          <Text style={[styles.details, { color: colorScheme === 'light' ? '#a9a9a9' : '#fff' }]}>
+            {`${item.paper ? item.paper.toUpperCase() : 'UNKNOWN'} ${item.year}`}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderListItem = ({ item }) => (
+    <TouchableOpacity
+      onPress={() => handlePress(item)}
+      style={[
+        styles.listItemContainer,
+        { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY },
+      ]}
+    >
+      <View style={styles.imageContainer}>
+        <Text style={styles.imageText}>{`Q ${item.year}`}</Text>
+      </View>
+      <View style={styles.textContainer}>
+        <Text style={[styles.subject, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}>
+          {capitalizeFirstLetter(item.title)}
+        </Text>
+        <View style={styles.row}>
+          <FontAwesome name="book" size={20} color={colorScheme === 'light' ? '#9835ff' : '#fff'} />
+          <Text style={[styles.examType, { color: colorScheme === 'light' ? '#9835ff' : '#fff' }]}>
+            {item.exam ? item.exam.toUpperCase() : item.title.toUpperCase()}
+          </Text>
+        </View>
+        <View style={styles.row}>
+          <FontAwesome name="line-chart" size={18} color={colorScheme === 'light' ? '#a9a9a9' : '#fff'} />
+          <Text style={[styles.level, { color: colorScheme === 'light' ? '#a9a9a9' : '#fff' }]}>{item.level}</Text>
+        </View>
+        <View style={styles.row}>
+          <FontAwesome name="file-text" size={20} color={colorScheme === 'light' ? '#a9a9a9' : '#fff'} />
+          <Text style={[styles.details, { color: colorScheme === 'light' ? '#a9a9a9' : '#fff' }]}>
+            {`${item.paper ? item.paper.toUpperCase() : 'UNKNOWN'} ${item.year}`}
+          </Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -44,17 +146,131 @@ const ResourceCategoryCarousel = ({ title, data }) => {
 
   return (
     <View style={{ marginBottom: 20 }}>
-      <Text style={{ fontSize: 20, marginLeft: 20, marginBottom: 10, fontFamily: 'Poppins-Medium', color: Colors.SECONDARY }}>{title}</Text>
-      <Carousel
-        data={data}
-        renderItem={renderItem}
-        sliderWidth={screenWidth}
-        itemWidth={itemWidth}
-        inactiveSlideScale={0.9}
-        inactiveSlideOpacity={0.7}
-      />
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}>{title}</Text>
+        <View style={styles.viewToggle}>
+          <TouchableOpacity onPress={() => setViewMode('carousel')}>
+            <MaterialIcons name="view-carousel" size={24} color={viewMode === 'carousel' ? (colorScheme === 'light' ? Colors.PRIMARY : '#fff') : (colorScheme === 'light' ? Colors.SECONDARY : '#aaa')} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setViewMode('grid')}>
+            <MaterialIcons name="view-module" size={24} color={viewMode === 'grid' ? (colorScheme === 'light' ? Colors.PRIMARY : '#fff') : (colorScheme === 'light' ? Colors.SECONDARY : '#aaa')} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setViewMode('list')}>
+            <MaterialIcons name="view-list" size={24} color={viewMode === 'list' ? (colorScheme === 'light' ? Colors.PRIMARY : '#fff') : (colorScheme === 'light' ? Colors.SECONDARY : '#aaa')} />
+          </TouchableOpacity>
+        </View>
+      </View>
+      {viewMode === 'carousel' && (
+        <Carousel
+          data={data}
+          renderItem={renderItem}
+          sliderWidth={screenWidth}
+          itemWidth={itemWidth}
+          inactiveSlideScale={0.9}
+          inactiveSlideOpacity={0.7}
+        />
+      )}
+      {viewMode === 'grid' && (
+        <FlatList
+          data={data}
+          renderItem={renderGridItem}
+          keyExtractor={(item) => item.id}
+          numColumns={2}
+          columnWrapperStyle={styles.gridColumn}
+        />
+      )}
+      {viewMode === 'list' && (
+        <FlatList
+          data={data}
+          renderItem={renderListItem}
+          keyExtractor={(item) => item.id}
+        />
+      )}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 10,
+  },
+  viewToggle: {
+    flexDirection: 'row',
+  },
+  itemContainer: {
+    borderRadius: 8,
+    overflow: 'hidden',
+    padding: 10,
+    width: itemWidth,
+    marginHorizontal: screenWidth * -0.16,
+  },
+  gridItemContainer: {
+    borderRadius: 8,
+    overflow: 'hidden',
+    padding: 10,
+    width: screenWidth * 0.45,
+    margin: screenWidth * 0.015, // Reduced margin for grid items
+  },
+  listItemContainer: {
+    borderRadius: 8,
+    overflow: 'hidden',
+    padding: 10,
+    width: screenWidth * 0.9,
+    marginVertical: 5,
+    alignSelf: 'center',
+  },
+  imageContainer: {
+    width: '100%',
+    height: screenWidth * 0.35,
+    borderRadius: 8,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageText: {
+    fontSize: screenWidth * 0.1,
+    color: '#a9a9a9',
+    opacity: 0.5,
+    fontFamily: 'Poppins-Medium',
+  },
+  textContainer: {
+    padding: 10,
+  },
+  subject: {
+    fontSize: screenWidth * 0.035,
+    fontFamily: 'Poppins-Medium',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 5,
+  },
+  examType: {
+    marginLeft: 5,
+    fontSize: 14,
+    fontFamily: 'Poppins-Medium',
+  },
+  level: {
+    fontSize: 14,
+    marginLeft: 2,
+    fontFamily: 'Poppins-Medium',
+  },
+  details: {
+    fontSize: 14,
+    marginLeft: 5,
+    fontFamily: 'Poppins-Medium',
+  },
+  title: {
+    fontSize: 20,
+    fontFamily: 'Poppins-Medium',
+  },
+  gridColumn: {
+    justifyContent: 'space-between',
+  },
+});
 
 export default ResourceCategoryCarousel;

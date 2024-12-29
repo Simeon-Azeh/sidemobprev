@@ -7,6 +7,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 import Colors from '../../../assets/Utils/Colors';
 import { useNavigation } from '@react-navigation/native';
+import { useColorScheme } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -15,6 +16,7 @@ const PerformanceGraph = () => {
   const [performanceData, setPerformanceData] = useState({ labels: [], scores: [] });
   const [lastUpdated, setLastUpdated] = useState('');
   const navigation = useNavigation();
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const fetchPerformanceData = async () => {
@@ -62,7 +64,7 @@ const PerformanceGraph = () => {
 
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
         <ActivityIndicator size="large" color="#9835ff" />
       </View>
     );
@@ -70,10 +72,10 @@ const PerformanceGraph = () => {
 
   if (performanceData.labels.length === 0) {
     return (
-      <View style={styles.containerSub}>
+      <View style={[styles.containerSub, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY }]}>
         <FontAwesome5 name="sad-tear" size={42} color={Colors.SECONDARY} style={styles.icon} />
-        <Text style={styles.title}>No data available yet!</Text>
-        <Text style={styles.subtitle}>you probably have not taken any quizzes yet, if you feel this was a mistake, please contact us</Text>
+        <Text style={[styles.title, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>No data available yet!</Text>
+        <Text style={[styles.subtitle, { color: colorScheme === 'light' ? '#888' : '#ccc' }]}>You probably have not taken any quizzes yet. If you feel this was a mistake, please contact us.</Text>
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('QuizChoice')}>
           <Text style={styles.buttonText}>Explore Quizzes</Text>
         </TouchableOpacity>
@@ -86,27 +88,27 @@ const PerformanceGraph = () => {
     datasets: [
       {
         data: performanceData.scores,
-        color: (opacity = 1) => `rgba(152, 53, 255, ${opacity})`,
+        color: (opacity = 1) => colorScheme === 'light' ? `rgba(152, 53, 255, ${opacity})` : `rgba(255, 255, 255, ${opacity})`,
       },
     ],
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Recent Performance</Text>
-      <Text style={styles.subtitle}>Last updated: {lastUpdated}</Text>
+    <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
+      <Text style={[styles.title, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Recent Performance</Text>
+      <Text style={[styles.subtitle, { color: colorScheme === 'light' ? '#888' : '#ccc' }]}>Last updated: {lastUpdated}</Text>
       <LineChart
         data={data}
         width={width - 40}
         height={220}
         yAxisLabel=""
         chartConfig={{
-          backgroundColor: '#fff',
-          backgroundGradientFrom: '#fff',
-          backgroundGradientTo: '#fff',
+          backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY,
+          backgroundGradientFrom: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY,
+          backgroundGradientTo: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY,
           decimalPlaces: 2,
-          color: (opacity = 1) => `rgba(152, 53, 255, ${opacity})`,
-          labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+          color: (opacity = 1) => colorScheme === 'light' ? `rgba(152, 53, 255, ${opacity})` : `rgba(255, 255, 255, ${opacity})`,
+          labelColor: (opacity = 1) => colorScheme === 'light' ? `rgba(0, 0, 0, ${opacity})` : `rgba(255, 255, 255, ${opacity})`,
           style: {
             borderRadius: 16,
             padding: 16,
@@ -114,13 +116,13 @@ const PerformanceGraph = () => {
           propsForDots: {
             r: '6',
             strokeWidth: '2',
-            stroke: '#9835ff',
+            stroke: colorScheme === 'light' ? '#9835ff' : '#fff',
           },
         }}
         bezier
         style={styles.chart}
       />
-      <Text style={styles.subtitle}>Performance Over Time</Text>
+      <Text style={[styles.subtitle, { color: colorScheme === 'light' ? '#888' : '#ccc' }]}>Performance Over Time</Text>
     </View>
   );
 };
@@ -129,27 +131,23 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 20,
     padding: 20,
-
   },
   containerSub: {
     marginVertical: 20,
     padding: 20,
-    backgroundColor: '#fff',
     borderRadius: 16,
     alignItems: 'center',
-
   },
   title: {
     fontSize: width * 0.045,
-    color: '#9835ff',
     fontFamily: 'Poppins-Medium',
   },
   subtitle: {
     fontSize: width * 0.03,
-    color: '#888',
     marginBottom: 20,
     fontFamily: 'Poppins',
     textAlign: 'center',
+    marginTop: 15,
   },
   chart: {
     borderRadius: 16,

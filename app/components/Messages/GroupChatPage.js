@@ -6,6 +6,7 @@ import Colors from '../../../assets/Utils/Colors';
 import GroupInputSection from './GroupInputSection';
 import GroupMessageList from './GroupMessageList';
 import GroupChatHeader from './GroupChatHeader';
+import { useColorScheme } from 'react-native';
 
 export default function GroupChatPage({ route, navigation }) {
   const { chat } = route.params;
@@ -13,6 +14,7 @@ export default function GroupChatPage({ route, navigation }) {
   const [newMessage, setNewMessage] = useState('');
   const auth = getAuth();
   const currentUser = auth.currentUser;
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const db = getFirestore();
@@ -53,7 +55,7 @@ export default function GroupChatPage({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
       <GroupChatHeader group={chat} navigation={navigation} />
       <GroupMessageList
         messages={messages}
@@ -72,6 +74,5 @@ export default function GroupChatPage({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
 });

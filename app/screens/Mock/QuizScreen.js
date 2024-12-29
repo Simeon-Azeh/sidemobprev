@@ -8,12 +8,14 @@ import { getFirestore, collection, addDoc, getDocs } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getAuth } from 'firebase/auth';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function QuizScreen() {
     const navigation = useNavigation();
     const timerRef = useRef(null);
+    const colorScheme = useColorScheme();
 
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -227,7 +229,7 @@ export default function QuizScreen() {
 
     if (loading) {
         return (
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
                 <ActivityIndicator size="large" color={Colors.PRIMARY} />
             </View>
         );
@@ -235,8 +237,8 @@ export default function QuizScreen() {
 
     if (questions.length === 0) {
         return (
-            <View style={styles.container}>
-                <Text>No questions available for the selected criteria.</Text>
+            <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
+                <Text style={{ color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }}>No questions available for the selected criteria.</Text>
             </View>
         );
     }
@@ -246,11 +248,11 @@ export default function QuizScreen() {
     const secondsLeft = timeLeft % 60;
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={24} color={Colors.PRIMARY} />
-                    <Text style={[{ color: Colors.PRIMARY, fontFamily: 'Poppins-Medium', fontSize: 14 }]}>
+        <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
+            <View style={[styles.header, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_HEADER }]}>
+                <TouchableOpacity style={[styles.backButton, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BUTTON }]} onPress={() => navigation.goBack()}>
+                    <Ionicons name="chevron-back" size={24} color={colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE} />
+                    <Text style={[{ color: colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE, fontFamily: 'Poppins-Medium', fontSize: 14 }]}>
                     End Quiz
                 </Text>
                 </TouchableOpacity>
@@ -273,11 +275,11 @@ export default function QuizScreen() {
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <View style={{ flex: 1, padding: 20 }}>
                     <View style={styles.questionContainer}>
-                    <Text style={[styles.question, { fontSize: 14, color: Colors.PRIMARY }]}>
+                    <Text style={[styles.question, { fontSize: 14, color: colorScheme === 'light' ? Colors.PRIMARY : Colors.LIGHT_TEXT }]}>
                      Question {currentQuestionIndex + 1} / {questions.length}
                   </Text>
 
-                        <Text style={styles.question}>
+                        <Text style={[styles.question, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>
                            {currentQuestion.question}
                         </Text>
                         {currentQuestion.type === 'MCQs' && currentQuestion.options.map(option => (
@@ -285,24 +287,27 @@ export default function QuizScreen() {
                                 key={option}
                                 style={[
                                     styles.optionButton,
-                                    selectedAnswers[currentQuestion.id] === option && styles.selectedOptionButton
+                                    { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY, borderColor: colorScheme === 'light' ? '#ccc' : Colors.DARK_BORDER },
+                                    selectedAnswers[currentQuestion.id] === option && { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff', borderColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }
                                 ]}
                                 onPress={() => handleOptionSelect(currentQuestion.id, option)}
                             >
                                 <Text style={[
                                     styles.optionText,
-                                    selectedAnswers[currentQuestion.id] === option && styles.selectedOptionText
+                                    { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE },
+                                    selectedAnswers[currentQuestion.id] === option && { color: colorScheme === 'light' ? Colors.WHITE : '#000' }
                                 ]}>{option}</Text>
                             </TouchableOpacity>
                         ))}
                         {currentQuestion.type === 'Text' && (
                             <TextInput
-                                style={styles.textInput}
+                                style={[styles.textInput, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY, borderColor: colorScheme === 'light' ? '#ddd' : Colors.DARK_BORDER, color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}
                                 multiline
                                 numberOfLines={4}
                                 value={selectedAnswers[currentQuestion.id] || ''}
                                 onChangeText={text => handleTextAnswerChange(currentQuestion.id, text)}
                                 placeholder="Type your answer here..."
+                                placeholderTextColor={colorScheme === 'light' ? '#999' : '#ccc'}
                             />
                         )}
                         {currentQuestion.type === 'MultipleAnswers' && currentQuestion.options.map(option => (
@@ -311,18 +316,19 @@ export default function QuizScreen() {
                                 label={option}
                                 checked={selectedAnswers[currentQuestion.id]?.[option] || false}
                                 onChange={() => handleCheckboxChange(currentQuestion.id, option)}
+                                colorScheme={colorScheme}
                             />
                         ))}
                     </View>
                 </View>
             </ScrollView>
 
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.submitButton} onPress={handleNextQuestion} disabled={submitting}>
+            <View style={[styles.buttonContainer, { borderColor: colorScheme === 'light' ? '#ddd' : Colors.DARK_BORDER }]}>
+                <TouchableOpacity style={[styles.submitButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BUTTON }]} onPress={handleNextQuestion} disabled={submitting}>
                     {submitting ? (
                         <ActivityIndicator size="small" color={Colors.WHITE} />
                     ) : (
-                        <Text style={styles.buttonTextsecondary}>{currentQuestionIndex < questions.length - 1 ? 'Next' : 'Submit'}</Text>
+                        <Text style={[styles.buttonTextsecondary, { color: colorScheme === 'light' ? Colors.WHITE : Colors.DARK_TEXT }]}>{currentQuestionIndex < questions.length - 1 ? 'Next' : 'Submit'}</Text>
                     )}
                 </TouchableOpacity>
             </View>
@@ -331,24 +337,23 @@ export default function QuizScreen() {
 }
 
 // Custom Checkbox Component
-const CustomCheckbox = ({ label, checked, onChange }) => (
+const CustomCheckbox = ({ label, checked, onChange, colorScheme }) => (
     <TouchableOpacity style={styles.checkboxContainer} onPress={onChange}>
-        <View style={[styles.checkbox, checked && styles.checked]}>
-            {checked && <Ionicons name="checkmark" size={16} color={Colors.WHITE} />}
+        <View style={[styles.checkbox, { borderColor: colorScheme === 'light' ? '#ddd' : Colors.DARK_BORDER }, checked && { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]}>
+            {checked && <Ionicons name="checkmark" size={16} color={colorScheme === 'light' ? Colors.WHITE : '#000'} />}
         </View>
-        <Text style={styles.checkboxLabel}>{label}</Text>
+        <Text style={[styles.checkboxLabel, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>{label}</Text>
     </TouchableOpacity>
 );
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
-
+        
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.PRIMARY,
         paddingHorizontal: 20,
         paddingTop: 20,
         height: screenHeight * 0.2,
@@ -362,13 +367,11 @@ const styles = StyleSheet.create({
         left: 20,
         top: 80,
         zIndex: 1,
-        backgroundColor: '#fff',
         borderRadius: 50,
         padding: 10,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        
     },
     progressContainer: {
         flex: 1,
@@ -383,7 +386,6 @@ const styles = StyleSheet.create({
     },    
     timeText: {
         marginLeft: 5,
-        color: Colors.WHITE,
         fontSize: 16,
         fontFamily: 'Poppins-SemiBold',
     },
@@ -397,50 +399,35 @@ const styles = StyleSheet.create({
         opacity: 0.8,
     },
     scrollContainer: {
-        paddingBottom: screenHeight * 0.1,
+        paddingBottom: screenHeight * 0.3,
     },
     questionContainer: {
         marginBottom: 20,
-        marginTop: 40,
+        marginTop: 80,
     },
     question: {
         fontSize: 18,
         fontFamily: 'Poppins-Medium',
-        color: Colors.SECONDARY,
         marginBottom: 10,
     },
     optionButton: {
         padding: 20,
         borderWidth: 1,
-        borderColor: '#ccc',
         borderRadius: 5,
         marginBottom: 10,
     },
-    selectedOptionButton: {
-        backgroundColor: Colors.PRIMARY,
-        borderColor: Colors.PRIMARY,
-
-    },
     optionText: {
         fontSize: 16,
-        color: Colors.SECONDARY,
         fontFamily: 'Poppins-Medium',
-
-    },
-    selectedOptionText: {
-        color: Colors.WHITE,
     },
     textInput: {
         height: 100,
-        borderColor: '#ddd',
         borderWidth: 1,
         borderRadius: 5,
         paddingHorizontal: 10,
         textAlignVertical: 'top',
         fontSize: 16,
-        color: Colors.SECONDARY,
         paddingTop: 10,
-
     },
     buttonContainer: {
         flexDirection: 'row',
@@ -449,16 +436,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 10,
         borderTopWidth: 1,
-        borderColor: '#ddd',
     },
     submitButton: {
-        backgroundColor: Colors.PRIMARY,
         paddingVertical: 10,
         paddingHorizontal: 40,
         borderRadius: 5,
     },
     buttonTextsecondary: {
-        color: Colors.WHITE,
         fontSize: 16,
         fontFamily: 'Poppins-Medium',
     },
@@ -472,13 +456,9 @@ const styles = StyleSheet.create({
         height: 20,
         borderRadius: 3,
         borderWidth: 1,
-        borderColor: '#ddd',
         marginRight: 10,
         justifyContent: 'center',
         alignItems: 'center',
-    },
-    checked: {
-        backgroundColor: Colors.PRIMARY,
     },
     checkboxLabel: {
         fontSize: 16,

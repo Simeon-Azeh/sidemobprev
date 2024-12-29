@@ -1,220 +1,258 @@
-import React, { useState } from 'react';
-import { View, ScrollView, Text, StyleSheet, Button, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, ScrollView, Text, StyleSheet, TouchableOpacity, RefreshControl, TextInput, ActivityIndicator, Animated } from 'react-native';
 import Header from '../../components/General/Header';
 import ResourceCategoryCarousel from '../../components/Resources/ResourceCategoryCarousel';
+import RecommendedResources from '../../components/Resources/RecommendedResources';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Dimensions } from 'react-native';
 import Colors from '../../../assets/Utils/Colors';
-import RNPickerSelect from 'react-native-picker-select';
-import Modal from 'react-native-modal';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import SolutionsImg from '../../../assets/Images/SolutionImg.png'
+import { useColorScheme } from 'react-native';
+import { getFirestore, collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
+import { getAuth } from 'firebase/auth';
 
 const { width } = Dimensions.get('window');
 
-const sampleResources = {
-  questions: {
-    popular: [
-      {
-        subject: 'Mathematics PII',
-        examType: 'GCE 2020',
-        level: 'ADVANCED',
-        ratings: 4.6,
-        reviews: 150,
-        image: 'https://img.freepik.com/free-psd/3d-rendering-questions-background_23-2151455628.jpg?t=st=1723124676~exp=1723128276~hmac=c5d9f139d10a6764ee9a7877d763b3d71b5bb44ffc743afe5554c8ad50531ed5&w=740',
-      },
-      {
-        subject: 'Biology PI',
-        examType: 'GCE 2019',
-        level: 'ADVANCED',
-        ratings: 4.3,
-        reviews: 100,
-        image: 'https://img.freepik.com/free-psd/3d-rendering-questions-background_23-2151455628.jpg?t=st=1723124676~exp=1723128276~hmac=c5d9f139d10a6764ee9a7877d763b3d71b5bb44ffc743afe5554c8ad50531ed5&w=740',
-      },
-      {
-        subject: 'Chemistry PI',
-        examType: 'WAEC 2019',
-        level: 'ADVANCED',
-        ratings: 4.3,
-        reviews: 100,
-        image: 'https://img.freepik.com/free-psd/3d-rendering-questions-background_23-2151455628.jpg?t=st=1723124676~exp=1723128276~hmac=c5d9f139d10a6764ee9a7877d763b3d71b5bb44ffc743afe5554c8ad50531ed5&w=740',
-      },
-    ],
-    NewUploads: [
-      {
-        subject: 'Chemistry PII',
-        examType: 'GCE 2024',
-        level: 'Alevel',
-        ratings: 4.8,
-        reviews: 80,
-        image: 'https://img.freepik.com/free-psd/3d-rendering-questions-background_23-2151455628.jpg?t=st=1723124676~exp=1723128276~hmac=c5d9f139d10a6764ee9a7877d763b3d71b5bb44ffc743afe5554c8ad50531ed5&w=740',
-      },
-    ],
-  
-  },
-  solutions: {
-    popular: [
-      {
-        subject: 'Physics PI',
-        examType: 'GCE 2019',
-        level: 'Olevel',
-        ratings: 4.3,
-        reviews: 100,
-        image: 'https://img.freepik.com/premium-vector/light-bulb-with-gears-gears-it_1108514-57566.jpg?w=740',
-      },
-    ],
-    NewUploads: [
-      {
-        subject: 'Maths & Mech PIII',
-        examType: 'GCE 2024',
-        level: 'Alevel',
-        ratings: 4.7,
-        reviews: 60,
-        image: 'https://img.freepik.com/premium-vector/light-bulb-with-gears-gears-it_1108514-57566.jpg?w=740',
-      },
-      {
-        subject: 'Biology PIII',
-        examType: 'GCE 2023',
-        level: 'Alevel',
-        ratings: 4.7,
-        reviews: 60,
-        image: 'https://img.freepik.com/premium-vector/light-bulb-with-gears-gears-it_1108514-57566.jpg?w=740',
-      },
-      {
-        subject: 'Food Science I',
-        examType: 'GCE 2023',
-        level: 'Alevel',
-        ratings: 4.7,
-        reviews: 60,
-        image: 'https://img.freepik.com/premium-vector/light-bulb-with-gears-gears-it_1108514-57566.jpg?w=740',
-      },
-    ],
- 
-  },
+const fetchResources = async (type) => {
+  const db = getFirestore();
+  const q = query(collection(db, 'pdfDocuments'), where('type', '==', type));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-const filterOptions = {
-  years: ['2020', '2021', '2022', '2023'],
-  disciplines: ['Arts', 'Science', 'Tech'],
-  subjects: ['Mathematics', 'Physics', 'Chemistry', 'Biology'],
-  levels: ['Alevel', 'Olevel'],
-  papers: ['Paper 1', 'Paper 2', 'Paper 3'],
+const fetchUserLevel = async (userId) => {
+  const db = getFirestore();
+  const userDoc = await getDocs(query(collection(db, 'users'), where('userId', '==', userId)));
+  if (!userDoc.empty) {
+    return userDoc.docs[0].data().level;
+  }
+  return null;
 };
 
-const FilterModal = ({ isVisible, onClose, onApply }) => {
-  const [selectedYearFirst, setSelectedYearStart] = useState(null);
-  const [selectedYearEnd, setSelectedYearEnd] = useState(null);
-  const [selectedDiscipline, setSelectedDiscipline] = useState(null);
-  const [selectedSubject, setSelectedSubject] = useState(null);
-  const [selectedLevel, setSelectedLevel] = useState(null);
-  const [selectedPaper, setSelectedPaper] = useState(null);
+const fetchRecommendedResources = async (level) => {
+  const db = getFirestore();
+  const q = query(collection(db, 'pdfDocuments'), where('level', '==', level));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+};
+
+const NoRecommendedContent = ({ onSettingsPress }) => {
+  const colorScheme = useColorScheme(); // Get the current color scheme
+  const slideAnim = new Animated.Value(-100); // Initial value for slide animation
+
+  useEffect(() => {
+    Animated.timing(slideAnim, {
+      toValue: 0,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   return (
-    <Modal isVisible={isVisible} onBackdropPress={onClose}>
-      <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Filter Resources</Text>
-        <RNPickerSelect
-          onValueChange={(value) => setSelectedYearStart(value)}
-          items={filterOptions.years.map(year => ({ label: year, value: year }))}
-          placeholder={{ label: 'From Year', value: null }}
-          style={pickerStyles}
-        />
-        <RNPickerSelect
-          onValueChange={(value) => setSelectedYearEnd(value)}
-          items={filterOptions.years.map(year => ({ label: year, value: year }))}
-          placeholder={{ label: 'To Year', value: null }}
-          style={pickerStyles}
-        />
-        <RNPickerSelect
-          onValueChange={(value) => setSelectedDiscipline(value)}
-          items={filterOptions.disciplines.map(discipline => ({ label: discipline, value: discipline }))}
-          placeholder={{ label: 'Select Discipline', value: null }}
-          style={pickerStyles}
-        />
-        <RNPickerSelect
-          onValueChange={(value) => setSelectedSubject(value)}
-          items={filterOptions.subjects.map(subject => ({ label: subject, value: subject }))}
-          placeholder={{ label: 'Select Subject', value: null }}
-          style={pickerStyles}
-        />
-        <RNPickerSelect
-          onValueChange={(value) => setSelectedLevel(value)}
-          items={filterOptions.levels.map(level => ({ label: level, value: level }))}
-          placeholder={{ label: 'Select Level', value: null }}
-          style={pickerStyles}
-        />
-        <RNPickerSelect
-          onValueChange={(value) => setSelectedPaper(value)}
-          items={filterOptions.papers.map(paper => ({ label: paper, value: paper }))}
-          placeholder={{ label: 'Select Paper', value: null }}
-          style={pickerStyles}
-        />
-        <View style={styles.modalButtons}>
-          <Button
-            title="Apply Filters"
-            color={Colors.PRIMARY}
-            onPress={() => {
-              onApply({ selectedYearFirst, selectedYearEnd, selectedDiscipline, selectedSubject, selectedLevel, selectedPaper });
-              onClose();
-            }}
-          />
-          <TouchableOpacity onPress={onClose}>
-            <Text style={styles.closeButton}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
+    <Animated.View style={[styles.noRecommendedContent, { transform: [{ translateY: slideAnim }], backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY }]}>
+      <Icon name="info" size={40} color={colorScheme === 'light' ? Colors.PRIMARY : '#fff'} />
+      <Text style={[styles.noRecommendedText, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}>
+        We couldn't recommend you courses because we don't know what level you are. Please update your level in settings.
+      </Text>
+      <TouchableOpacity
+        style={[styles.submitButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]}
+        onPress={onSettingsPress}
+      >
+        <Text style={[styles.submitButtonText, { color: colorScheme === 'light' ? '#fff' : '#000' }]}>Update in Settings</Text>
+      </TouchableOpacity>
+    </Animated.View>
   );
 };
 
-const FloatingFilterButton = ({ onPress }) => (
-  <TouchableOpacity style={styles.floatingButton} onPress={onPress}>
-    <Icon name="filter-list" size={40} color="#fff" />
-  </TouchableOpacity>
-);
+const QuestionsTab = ({ userId }) => {
+  const [questions, setQuestions] = useState([]);
+  const [filteredQuestions, setFilteredQuestions] = useState([]);
+  const [recommendedQuestions, setRecommendedQuestions] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigation = useNavigation();
+  const colorScheme = useColorScheme(); // Get the current color scheme
 
-const QuestionsTab = () => {
-  const [isModalVisible, setModalVisible] = useState(false);
-  const handleApplyFilters = (filters) => {
-    console.log('Applied filters:', filters);
-    // Apply filters to the resource data
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      const data = await fetchResources('questions');
+      setQuestions(data);
+      setFilteredQuestions(data);
+    };
+    fetchQuestions();
+  }, []);
+
+  useEffect(() => {
+    const fetchUserAndRecommendedQuestions = async () => {
+      const level = await fetchUserLevel(userId);
+      if (level) {
+        const data = await fetchRecommendedResources(level);
+        setRecommendedQuestions(data);
+      }
+    };
+    fetchUserAndRecommendedQuestions();
+  }, [userId]);
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query) {
+      const filteredData = questions.filter((item) =>
+        item.title.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredQuestions(filteredData);
+    } else {
+      setFilteredQuestions(questions);
+    }
+  };
+
+  const handleItemPress = async (item) => {
+    const db = getFirestore();
+    const docRef = doc(db, 'pdfDocuments', item.id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const fileURL = docSnap.data().fileURL;
+      navigation.navigate('ResourceDocs', {
+        fileURL,
+        title: item.title,
+        exam: item.exam,
+        year: item.year,
+        level: item.level,
+      });
+    } else {
+      console.log('No such document!');
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    const data = await fetchResources('questions');
+    setQuestions(data);
+    setFilteredQuestions(data);
+    const level = await fetchUserLevel(userId);
+    if (level) {
+      const recommendedData = await fetchRecommendedResources(level);
+      setRecommendedQuestions(recommendedData);
+    }
+    setRefreshing(false);
   };
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <ResourceCategoryCarousel title="Recommended Questions" data={sampleResources.questions.popular} />
-        <ResourceCategoryCarousel title="New Uploads" data={sampleResources.questions.NewUploads} />
-     
+      <ScrollView
+        contentContainerStyle={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View style={[styles.searchContainer, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY }]}>
+          <Icon name="search" size={20} color={colorScheme === 'light' ? '#000' : '#fff'} />
+          <TextInput
+            style={[styles.searchInput, { color: colorScheme === 'light' ? '#000' : '#fff' }]}
+            placeholder="Search questions..."
+            placeholderTextColor={colorScheme === 'light' ? '#999' : '#ccc'}
+            value={searchQuery}
+            onChangeText={handleSearch}
+          />
+        </View>
+        <ResourceCategoryCarousel title="All Questions" data={filteredQuestions} onItemPress={handleItemPress} />
+        {recommendedQuestions.length > 0 ? (
+          <RecommendedResources resources={recommendedQuestions} />
+        ) : (
+          <NoRecommendedContent onSettingsPress={() => navigation.navigate('Settings')} />
+        )}
       </ScrollView>
-      <FloatingFilterButton onPress={() => setModalVisible(true)} />
-      <FilterModal isVisible={isModalVisible} onClose={() => setModalVisible(false)} onApply={handleApplyFilters} />
+      {loading && <ActivityIndicator size="large" color={Colors.PRIMARY} style={styles.loadingIndicator} />}
     </View>
   );
 };
 
 const SolutionsTab = () => {
-  const [isModalVisible, setModalVisible] = useState(false);
-  const handleApplyFilters = (filters) => {
-    console.log('Applied filters:', filters);
-    // Apply filters to the resource data
+  const [solutions, setSolutions] = useState([]);
+  const [filteredSolutions, setFilteredSolutions] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigation = useNavigation();
+  const colorScheme = useColorScheme(); // Get the current color scheme
+
+  useEffect(() => {
+    const fetchSolutions = async () => {
+      const data = await fetchResources('solutions');
+      setSolutions(data);
+      setFilteredSolutions(data);
+    };
+    fetchSolutions();
+  }, []);
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    if (query) {
+      const filteredData = solutions.filter((item) =>
+        item.title.toLowerCase().includes(query.toLowerCase())
+      );
+      setFilteredSolutions(filteredData);
+    } else {
+      setFilteredSolutions(solutions);
+    }
+  };
+
+  const handleItemPress = async (item) => {
+    const db = getFirestore();
+    const docRef = doc(db, 'pdfDocuments', item.id);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const fileURL = docSnap.data().fileURL;
+      navigation.navigate('ResourceDocs', {
+        fileURL,
+        title: item.title,
+        exam: item.exam,
+        year: item.year,
+        level: item.level,
+      });
+    } else {
+      console.log('No such document!');
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    const data = await fetchResources('solutions');
+    setSolutions(data);
+    setFilteredSolutions(data);
+    setRefreshing(false);
   };
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <ResourceCategoryCarousel title="Popular Solutions" data={sampleResources.solutions.popular} />
-        <ResourceCategoryCarousel title="New Uploads" data={sampleResources.solutions.NewUploads} />
-       
+      <ScrollView
+        contentContainerStyle={styles.scrollView}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View style={[styles.searchContainer, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY }]}>
+          <Icon name="search" size={20} color={colorScheme === 'light' ? '#000' : '#fff'} />
+          <TextInput
+            style={[styles.searchInput, { color: colorScheme === 'light' ? '#000' : '#fff' }]}
+            placeholder="Search solutions..."
+            placeholderTextColor={colorScheme === 'light' ? '#999' : '#ccc'}
+            value={searchQuery}
+            onChangeText={handleSearch}
+          />
+        </View>
+        <ResourceCategoryCarousel title="Popular Solutions" data={filteredSolutions} onItemPress={handleItemPress} />
       </ScrollView>
-      <FloatingFilterButton onPress={() => setModalVisible(true)} />
-      <FilterModal isVisible={isModalVisible} onClose={() => setModalVisible(false)} onApply={handleApplyFilters} />
+      {loading && <ActivityIndicator size="large" color={Colors.PRIMARY} style={styles.loadingIndicator} />}
     </View>
   );
 };
 
-const renderScene = SceneMap({
-  questions: QuestionsTab,
+const renderScene = (userId) => SceneMap({
+  questions: () => <QuestionsTab userId={userId} />,
   solutions: SolutionsTab,
 });
 
@@ -224,25 +262,28 @@ export default function Resource() {
     { key: 'questions', title: 'Questions' },
     { key: 'solutions', title: 'Solutions' },
   ]);
+  const colorScheme = useColorScheme(); // Get the current color scheme
+  const auth = getAuth();
+  const user = auth.currentUser;
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: colorScheme === 'light' ? Colors.LIGHT_BACKGROUND : Colors.DARK_BACKGROUND }}>
       <Header />
       <TabView
         navigationState={{ index, routes }}
-        renderScene={renderScene}
+        renderScene={renderScene(user ? user.uid : 'user123')}
         onIndexChange={setIndex}
         initialLayout={{ width }}
         style={{ marginTop: 0 }}
         renderTabBar={props => (
           <TabBar
             {...props}
-            indicatorStyle={{ backgroundColor: '#9835FF', height: 3 }}
-            style={{ backgroundColor: '#fff' }}
-            labelStyle={{ color: Colors.SECONDARY, fontFamily: 'Poppins-Medium' }}
-            activeColor="#9835FF"
-            inactiveColor="gray"
-            pressColor="#f9feff"
+            indicatorStyle={{ backgroundColor: colorScheme === 'light' ? '#9835FF' : '#fff', height: 3 }}
+            style={{ backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_HEADER }}
+            labelStyle={{ color: colorScheme === 'light' ? Colors.SECONDARY : '#fff', fontFamily: 'Poppins-Medium' }}
+            activeColor={colorScheme === 'light' ? '#9835FF' : '#fff'}
+            inactiveColor={colorScheme === 'light' ? 'gray' : Colors.DARK_TEXT_MUTED}
+            pressColor={colorScheme === 'light' ? '#f9feff' : Colors.DARK_BUTTON}
           />
         )}
       />
@@ -275,7 +316,6 @@ const pickerStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   modalContent: {
-    backgroundColor: 'white',
     padding: 20,
     borderRadius: 10,
     alignItems: 'center',
@@ -288,33 +328,65 @@ const styles = StyleSheet.create({
   modalButtons: {
     flexDirection: 'row-reverse',
     justifyContent: 'space-between',
-    gap: 10,
     alignItems: 'flex-end',
     marginLeft: 'auto',
   },
   closeButton: {
-    color: Colors.SECONDARY,
     fontSize: 16,
     fontFamily: 'Poppins-Medium',
     borderWidth: 1,
-    borderColor: Colors.SECONDARY,
     paddingVertical: 3,
     paddingHorizontal: 10,
     borderRadius: 5,
   },
-  floatingButton: {
-    position: 'absolute',
-    bottom: 30,
-    right: 20,
-    backgroundColor: Colors.PRIMARY,
-    borderRadius: 50,
-    padding: 10,
-    elevation: 5,
-  },
   scrollView: {
     flexGrow: 1,
     paddingTop: 15,
-  
     paddingBottom: 70, // Space for floating button
+    
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    marginBottom: 10,
+    
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 10,
+    fontFamily: 'Poppins-Medium',
+    paddingHorizontal: 10,
+  },
+  submitButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginTop: 10,
+  },
+  submitButtonText: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Medium',
+  },
+  noRecommendedContent: {
+    padding: 20,
+    borderRadius: 10,
+    margin: 20,
+    alignItems: 'center',
+  },
+  noRecommendedText: {
+    fontSize: 16,
+    fontFamily: 'Poppins-Medium',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  loadingIndicator: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: [{ translateX: -25 }, { translateY: -25 }],
   },
 });

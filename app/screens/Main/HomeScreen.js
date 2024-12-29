@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Dimensions, Image, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Dimensions, Image, ScrollView, TouchableOpacity, RefreshControl } from 'react-native';
 import Carousel from 'react-native-snap-carousel';
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Progress from 'react-native-progress';
@@ -22,9 +22,10 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const colorScheme = useColorScheme();
 
-  const themeBackgroundColor = colorScheme === 'light' ? Colors.WHITE : Colors.DARK_BACKGROUND;
+  const themeBackgroundColor = colorScheme === 'light' ? Colors.LIGHT_BACKGROUND : Colors.DARK_BACKGROUND;
   const themeTextColor = colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT;
   const themeCardBackgroundColor = colorScheme === 'light' ? Colors.LIGHT_GRAY : Colors.DARK_SECONDARY;
   const themeButtonBackgroundColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BUTTON;
@@ -35,40 +36,48 @@ export default function HomeScreen() {
   const sliderWidth = screenWidth;
   const itemWidth = screenWidth * 0.8;
 
-  useEffect(() => {
-    const fetchEnrolledCourses = async () => {
-      try {
-        const user = auth.currentUser;
-        if (user) {
-          const q = query(collection(getFirestore(), 'Enrollments'), where('userEmail', '==', user.email));
-          const querySnapshot = await getDocs(q);
-          const courses = [];
-          for (const enrollmentDoc of querySnapshot.docs) {
-            const data = enrollmentDoc.data();
-            const courseRef = doc(getFirestore(), 'courses', data.courseId);
-            const courseDoc = await getDoc(courseRef);
-            if (courseDoc.exists()) {
-              const courseData = courseDoc.data();
-              courses.push({
-                id: enrollmentDoc.id,
-                title: courseData.title,
-                image: courseData.image,
-                category: courseData.category || 'Unknown',
-                progress: data.progress || 0,
-              });
-            }
+  const fetchEnrolledCourses = async () => {
+    try {
+      const user = auth.currentUser;
+      if (user) {
+        const q = query(collection(getFirestore(), 'Enrollments'), where('userEmail', '==', user.email));
+        const querySnapshot = await getDocs(q);
+        const courses = [];
+        for (const enrollmentDoc of querySnapshot.docs) {
+          const data = enrollmentDoc.data();
+          const courseRef = doc(getFirestore(), 'courses', data.courseId);
+          const courseDoc = await getDoc(courseRef);
+          if (courseDoc.exists()) {
+            const courseData = courseDoc.data();
+            courses.push({
+              id: enrollmentDoc.id,
+              title: courseData.title,
+              image: courseData.image,
+              category: courseData.category || 'Unknown',
+              progress: data.progress || 0,
+            });
           }
-          setEnrolledCourses(courses);
         }
-      } catch (error) {
-        console.error("Error fetching enrolled courses:", error);
-      } finally {
-        setLoading(false);
+        setEnrolledCourses(courses);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching enrolled courses:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
+  useEffect(() => {
     fetchEnrolledCourses();
   }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchEnrolledCourses();
+    // Add any additional data fetching logic for other components here
+    // For example, if StatsCard and StudyTracker need to fetch data, call their respective functions here
+  };
 
   const renderItem = ({ item }) => {
     const truncatedTitle = item.title.length > 14 ? item.title.slice(0, 14) + '...' : item.title;
@@ -146,7 +155,17 @@ export default function HomeScreen() {
       <View style={{ zIndex: 1000 }}>
         <Header />
       </View>
-      <ScrollView nestedScrollEnabled={true}>
+      <ScrollView
+        nestedScrollEnabled={true}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[Colors.PRIMARY]}
+            tintColor={Colors.PRIMARY}
+          />
+        }
+      >
         <View style={{ paddingHorizontal: 15, marginVertical: 15 }}>
           <GreetingCard />
         </View>

@@ -4,47 +4,49 @@ import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
 import DesignUi3 from '../../../assets/Images/DesignUi3.png';
 import { useNavigation } from '@react-navigation/native';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 export default function CorrectAnswersScreen({ route }) {
     const navigation = useNavigation();
     const { questions } = route.params;
+    const colorScheme = useColorScheme();
 
     if (!questions) {
         return (
-            <View style={styles.container}>
-                <Text style={styles.errorText}>No questions available.</Text>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={32} color={Colors.PRIMARY} />
+            <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? Colors.LIGHT_BACKGROUND : Colors.DARK_BACKGROUND }]}>
+                <Text style={[styles.errorText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT }]}>No questions available.</Text>
+                <TouchableOpacity style={[styles.backButton, { backgroundColor: colorScheme === 'light' ? Colors.WHITE : Colors.DARK_BUTTON }]} onPress={() => navigation.goBack()}>
+                    <Ionicons name="chevron-back" size={32} color={colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE} />
                 </TouchableOpacity>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={32} color={Colors.PRIMARY} />
+        <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? Colors.LIGHT_BACKGROUND : Colors.DARK_BACKGROUND }]}>
+            <View style={[styles.header, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_HEADER }]}>
+                <TouchableOpacity style={[styles.backButton, { backgroundColor: colorScheme === 'light' ? Colors.WHITE : Colors.DARK_BUTTON }]} onPress={() => navigation.goBack()}>
+                    <Ionicons name="chevron-back" size={32} color={colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Correct Answers</Text>
+                <Text style={[styles.headerTitle, { color: colorScheme === 'light' ? Colors.WHITE : Colors.DARK_TEXT }]}>Correct Answers</Text>
                 <Image source={DesignUi3} style={styles.headerImage} />
             </View>
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 <View style={{ flex: 1, padding: 20 }}>
                     {questions.map((item, index) => (
                         <View key={index} style={styles.questionContainer}>
-                            <Text style={styles.question}>{index + 1}. {item.question}</Text>
-                            <Text style={styles.correctAnswerTitle}>Correct Answer:</Text>
-                            <Text style={styles.correctAnswer}>{item.answer}</Text>
+                            <Text style={[styles.question, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT }]}>{index + 1}. {item.question}</Text>
+                            <Text style={[styles.correctAnswerTitle, { color: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_TEXT }]}>Correct Answer:</Text>
+                            <Text style={[styles.correctAnswer, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT }]}>{item.answer}</Text>
                         </View>
                     ))}
                 </View>
             </ScrollView>
-            <View style={styles.buttonContainer}>
-                <TouchableOpacity style={styles.submitButton} onPress={() => navigation.navigate('QuizScreen')}>
-                    <Text style={styles.buttonTextsecondary}>Retake Quiz</Text>
+            <View style={[styles.buttonContainer, { backgroundColor: colorScheme === 'light' ? Colors.LIGHT_BACKGROUND : Colors.DARK_BACKGROUND }]}>
+                <TouchableOpacity style={[styles.submitButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BUTTON }]} onPress={() => navigation.navigate('QuizScreen')}>
+                    <Text style={[styles.buttonTextsecondary, { color: colorScheme === 'light' ? Colors.WHITE : Colors.DARK_TEXT }]}>Retake Quiz</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -54,7 +56,6 @@ export default function CorrectAnswersScreen({ route }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
     },
     scrollContainer: {
         paddingBottom: screenHeight * 0.1,
@@ -62,7 +63,6 @@ const styles = StyleSheet.create({
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: Colors.PRIMARY,
         paddingHorizontal: 20,
         paddingTop: 20,
         height: screenHeight * 0.2,
@@ -75,7 +75,6 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: 20,
         top: 40,
-        backgroundColor: '#fff',
         borderRadius: 50,
         padding: 5,
         zIndex: 1,
@@ -83,7 +82,6 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: screenWidth * 0.05,
         fontFamily: 'Poppins-Medium',
-        color: '#fff',
         textAlign: 'center',
         flex: 1,
     },
@@ -102,28 +100,23 @@ const styles = StyleSheet.create({
     question: {
         fontSize: screenWidth * 0.035,
         fontFamily: 'Poppins-Medium',
-        color: Colors.SECONDARY,
         marginBottom: 10,
     },
     correctAnswerTitle: {
         fontSize: screenWidth * 0.03,
         fontFamily: 'Poppins-Medium',
-        color: Colors.PRIMARY,
         marginBottom: 5,
     },
     correctAnswer: {
-        fontSize: screenWidth * 0.03,
-        fontFamily: 'Poppins',
-        color: Colors.SECONDARY,
+        fontSize: screenWidth * 0.04,
+        fontFamily: 'Poppins-Bold',
     },
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'center',
         padding: 20,
-        backgroundColor: '#fff',
     },
     submitButton: {
-        backgroundColor: Colors.PRIMARY,
         paddingVertical: 15,
         borderRadius: 10,
         alignItems: 'center',
@@ -133,12 +126,10 @@ const styles = StyleSheet.create({
     buttonTextsecondary: {
         fontSize: screenWidth * 0.035,
         fontFamily: 'Poppins-Medium',
-        color: Colors.WHITE,
     },
     errorText: {
         fontSize: screenWidth * 0.05,
         fontFamily: 'Poppins-Medium',
-        color: Colors.SECONDARY,
         textAlign: 'center',
         marginTop: 20,
     },

@@ -55,7 +55,7 @@ import AppointmentBooking from './app/screens/SecondaryScreens/AppointmentBookin
 import CustomHeaderTitle from './app/components/General/CustomHeaderTitle';
 import GroupChatPage from './app/components/Messages/GroupChatPage';
 import RedeemedTicketsPage from './app/components/Discover/RedeemedTickets';
-import { Appearance, useColorScheme } from 'react-native';
+import {  useColorScheme } from 'react-native';
 
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -230,7 +230,7 @@ export default function App() {
           headerTitle: () => <CustomHeaderTitle title="Certificates" />
          }} />
         <Stack.Screen name="CourseEnrolment" component={CourseEnrolment} options={{ headerShown: false }} />
-        <Stack.Screen name="ResourceData" component={ResourceDocs} options={{ headerShown: false }} />
+        <Stack.Screen name="ResourceDocs" component={ResourceDocs} options={{ headerShown: false }} />
         <Stack.Screen name="Notifications" component={Notifications} options={{ title: 'Notifications',
           headerTitle: () => <CustomHeaderTitle title="Notifications" />
          }} />
@@ -263,9 +263,8 @@ export default function App() {
         <Stack.Screen name="Notes" component={Notes} options={{ headerShown: false  }} />
         <Stack.Screen name="FullNote" component={FullNote} options={{ headerShown: false  }} />
         <Stack.Screen name="EnrolledCourses" component={EnrolledCourses} options={{ headerShown: false  }} />
-        <Stack.Screen name='UploadPost' component={UploadPost} options={{ title: 'Upload Post',
-          headerTitle: () => <CustomHeaderTitle title="Upload Post" />
-         }} />
+        <Stack.Screen name='UploadPost' component={UploadPost}  options={{ headerShown: false  }} />
+        
         <Stack.Screen name='IQprofile' component={IQprofile} options={{ title: 'Profile',
           headerTitle: () => <CustomHeaderTitle title="Feed" />
          }} />

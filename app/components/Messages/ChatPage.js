@@ -8,6 +8,10 @@ import * as DocumentPicker from 'expo-document-picker';
 import { getFirestore, collection, addDoc, query, onSnapshot, orderBy, doc, updateDoc } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { Timestamp } from 'firebase/firestore';
+import { useColorScheme } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import Colors from '../../../assets/Utils/Colors';
+import { SafeAreaView } from 'react-native';
 
 export default function ChatPage({ route }) {
   const { chat, realTimestamp } = route.params;
@@ -15,6 +19,7 @@ export default function ChatPage({ route }) {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const db = getFirestore();
@@ -99,29 +104,41 @@ export default function ChatPage({ route }) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0} // Adjust offset based on header height
-    >
-      <ChatHeader chat={chat} realTimestamp={realTimestamp} />
-      <MessageList messages={messages} handleDeleteMessage={handleDeleteMessage} handleOpenMessage={handleOpenMessage} />
-      <InputSection
-        message={message}
-        setMessage={setMessage}
-        handleSend={handleSend}
-        handleFileAttachment={handleFileAttachment}
-        setShowEmojiPicker={setShowEmojiPicker}
-      />
-      {showEmojiPicker && <EmojiPicker handleEmojiSelect={handleEmojiSelect} />}
-    </KeyboardAvoidingView>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#f9f9f9' : Colors.DARK_BACKGROUND }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 40 : 0} // Adjust offset based on header height
+      >
+        <StatusBar
+          style={colorScheme === 'light' ? 'dark' : 'light'}
+          backgroundColor={colorScheme === 'light' ? '#f9f9f9' : Colors.DARK_BACKGROUND}
+        />
+        <View style={styles.headerWrapper}>
+          <ChatHeader chat={chat} realTimestamp={realTimestamp} />
+        </View>
+        <MessageList messages={messages} handleDeleteMessage={handleDeleteMessage} handleOpenMessage={handleOpenMessage} />
+        <InputSection
+          message={message}
+          setMessage={setMessage}
+          handleSend={handleSend}
+          handleFileAttachment={handleFileAttachment}
+          setShowEmojiPicker={setShowEmojiPicker}
+        />
+        {showEmojiPicker && <EmojiPicker handleEmojiSelect={handleEmojiSelect} />}
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
-    marginTop: 40,
+  },
+  headerWrapper: {
+    marginTop: 40, // Adjust this value to push down the header
   },
 });

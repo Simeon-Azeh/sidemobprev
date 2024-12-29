@@ -8,16 +8,20 @@ import MessageHeader from '../../components/Messages/MessageHeader';
 import ChatCard from '../../components/Messages/ChatCard';
 import GroupCreationModal from '../../components/Messages/GroupCreationModal';
 import { useNavigation } from '@react-navigation/native';
-import { getFirestore, collection, query, onSnapshot, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { useColorScheme } from 'react-native';
+import AntDesign from '@expo/vector-icons/AntDesign';
 
 const { width: screenWidth } = Dimensions.get('window');
 
 const PeopleTab = ({ users, loading }) => {
   const navigation = useNavigation();
+  const colorScheme = useColorScheme();
+  const themePrimaryColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE;
 
   if (loading) {
-    return <ActivityIndicator size="large" color={Colors.PRIMARY} style={styles.loadingIndicator} />;
+    return <ActivityIndicator size="large" color={themePrimaryColor} style={styles.loadingIndicator} />;
   }
 
   return (
@@ -34,9 +38,11 @@ const PeopleTab = ({ users, loading }) => {
 
 const GroupsTab = ({ groups, loading }) => {
   const navigation = useNavigation();
+  const colorScheme = useColorScheme();
+  const themePrimaryColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE;
 
   if (loading) {
-    return <ActivityIndicator size="large" color={Colors.PRIMARY} style={styles.loadingIndicator} />;
+    return <ActivityIndicator size="large" color={themePrimaryColor} style={styles.loadingIndicator} />;
   }
 
   return (
@@ -44,13 +50,13 @@ const GroupsTab = ({ groups, loading }) => {
       data={groups}
       renderItem={({ item }) => (
         <TouchableOpacity
-          style={styles.groupCard}
+          style={[styles.groupCard, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY }]}
           onPress={() => navigation.navigate('GroupChatPage', { chat: item })}
         >
           <Image source={{ uri: item.profilePicture }} style={styles.groupAvatar} />
           <View style={styles.groupInfo}>
-            <Text style={styles.groupName}>{item.name}</Text>
-            <Text style={styles.groupDescription}>{item.description}</Text>
+            <Text style={[styles.groupName, { color: colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE }]}>{item.name}</Text>
+            <Text style={[styles.groupDescription, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>{item.description}</Text>
           </View>
         </TouchableOpacity>
       )}
@@ -71,6 +77,7 @@ export default function Messages() {
   const [searchText, setSearchText] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const colorScheme = useColorScheme();
 
   const fetchUsers = async () => {
     try {
@@ -110,11 +117,20 @@ export default function Messages() {
       const db = getFirestore();
       const groupsRef = collection(db, 'groups');
       const querySnapshot = await getDocs(groupsRef);
-      const groupsData = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      })).filter(group => group.visibility === 'public' || group.members.includes(currentUser.email) || group.createdBy === currentUser.email);
-      setGroups(groupsData);
+      const groupsData = await Promise.all(querySnapshot.docs.map(async doc => {
+        const groupData = doc.data();
+        const messagesRef = collection(db, 'groupChats', doc.id, 'messages');
+        const messagesQuery = query(messagesRef, orderBy('timestamp', 'desc'), limit(1));
+        const messagesSnapshot = await getDocs(messagesQuery);
+        const lastMessage = messagesSnapshot.docs.length > 0 ? messagesSnapshot.docs[0].data().text : 'No messages yet';
+        return {
+          id: doc.id,
+          ...groupData,
+          lastMessage,
+        };
+      }));
+      const filteredGroups = groupsData.filter(group => group.visibility === 'public' || group.members.includes(currentUser.email) || group.createdBy === currentUser.email);
+      setGroups(filteredGroups);
     } catch (error) {
       console.error("Error fetching groups:", error);
     } finally {
@@ -158,24 +174,24 @@ export default function Messages() {
   const renderTabBar = props => (
     <TabBar
       {...props}
-      indicatorStyle={{ backgroundColor: Colors.PRIMARY }}
-      style={styles.tabBar}
-      activeColor={Colors.PRIMARY}
-      inactiveColor="#888"
+      indicatorStyle={{ backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE }}
+      style={[styles.tabBar, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}
+      activeColor={colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE}
+      inactiveColor={colorScheme === 'light' ? '#888' : Colors.DARK_TEXT}
       renderLabel={({ route, focused }) => (
         <View style={styles.tabLabelContainer}>
-          <Icon name={route.key === 'chats' ? 'message-square' : 'users'} size={20} color={focused ? Colors.PRIMARY : '#888'} />
-          <Text style={[styles.tabLabel, { color: focused ? Colors.PRIMARY : '#888' }]}>
+          <Icon name={route.key === 'chats' ? 'message-square' : 'users'} size={20} color={focused ? (colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE) : (colorScheme === 'light' ? '#888' : Colors.DARK_TEXT)} />
+          <Text style={[styles.tabLabel, { color: focused ? (colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE) : (colorScheme === 'light' ? '#888' : Colors.DARK_TEXT) }]}>
             {route.title}
           </Text>
         </View>
       )}
-      pressColor='#f9feff'
+      pressColor={colorScheme === 'light' ? '#f9feff' : Colors.DARK_SECONDARY}
     />
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#f9f9f9' : Colors.DARK_BACKGROUND }]}>
       <MessageHeader setSearchText={setSearchText} />
       <TabView
         navigationState={{ index, routes }}
@@ -184,8 +200,8 @@ export default function Messages() {
         initialLayout={{ width: screenWidth }}
         renderTabBar={renderTabBar}
       />
-      <TouchableOpacity style={styles.floatingButton} onPress={handleAddNewChat}>
-        <MaterialCommunityIcon name="message-plus-outline" size={30} color="#fff" />
+      <TouchableOpacity style={[styles.floatingButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]} onPress={handleAddNewChat}>
+        <AntDesign name="addusergroup" size={30} color={colorScheme === 'light' ? '#fff' : '#000'} />
       </TouchableOpacity>
       <GroupCreationModal
         visible={isModalVisible}
@@ -199,10 +215,8 @@ export default function Messages() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
   },
   tabBar: {
-    backgroundColor: '#fff',
     elevation: 2,
   },
   tabLabelContainer: {
@@ -221,7 +235,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: 20,
-    backgroundColor: Colors.PRIMARY,
     width: 60,
     height: 60,
     borderRadius: 30,
@@ -235,7 +248,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   noGroupsText: {
-    color: '#888',
     textAlign: 'center',
     fontFamily: 'Poppins-Medium',
     marginTop: 20,
@@ -244,15 +256,20 @@ const styles = StyleSheet.create({
   groupCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    padding: 15,
+    marginVertical: 5,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 5,
+    elevation: 3,
   },
   groupAvatar: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    marginRight: 10,
+    marginRight: 15,
   },
   groupInfo: {
     flex: 1,
@@ -260,10 +277,12 @@ const styles = StyleSheet.create({
   groupName: {
     fontFamily: 'Poppins-Medium',
     fontSize: 16,
+    marginBottom: 5,
   },
   groupDescription: {
     fontFamily: 'Poppins',
-    color: '#888',
+    fontSize: 14,
+    marginBottom: 5,
   },
   loadingIndicator: {
     flex: 1,

@@ -8,6 +8,7 @@ import { auth } from '../../../firebaseConfig';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithRedirect } from 'firebase/auth';
 import { Feather } from '@expo/vector-icons';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const db = getFirestore();
@@ -20,6 +21,19 @@ export default function LoginScreen() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
+  const colorScheme = useColorScheme();
+
+  const themeBackgroundColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BACKGROUND;
+  const themeTextColor = colorScheme === 'light' ? Colors.WHITE : Colors.DARK_TEXT;
+  const themeInputBackgroundColor = colorScheme === 'light' ? Colors.WHITE : Colors.DARK_SECONDARY;
+  const themeInputTextColor = colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT;
+  const themeButtonBackgroundColor = colorScheme === 'light' ? Colors.WHITE : Colors.DARK_BUTTON;
+  const themeButtonTextColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE;
+  const themeModalBackgroundColor = colorScheme === 'light' ? 'white' : Colors.DARK_SECONDARY;
+  const themeModalTextColor = colorScheme === 'light' ? '#333' : Colors.WHITE;
+  const themePlaceholderTextColor = colorScheme === 'light' ? '#888' : '#aaa';
+  const themeEyeIconColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE;
+  const themeBorderColor = colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_BORDER;
 
   const checkOnboardingStatus = async (uid) => {
     try {
@@ -84,12 +98,14 @@ export default function LoginScreen() {
               height: screenHeight * 0.4, 
               alignSelf: 'center', 
               resizeMode: 'contain',
-              marginTop: 10 // Adjusted to bring image up
+              marginTop: 10, // Adjusted to bring image up
+              tintColor: colorScheme === 'light' ? null : Colors.DARK_SECONDARY, // Apply lighter dark color
+              filter: colorScheme === 'light' ? null : 'grayscale(50%)' // Apply lighter grayscale in dark mode
             }} 
           />
           <View style={{
             flex: 1, // Ensure it takes up the remaining space
-            backgroundColor: Colors.PRIMARY,
+            backgroundColor: themeBackgroundColor,
             width: '100%',
             borderTopLeftRadius: 0,
             borderTopRightRadius: 80,
@@ -98,7 +114,7 @@ export default function LoginScreen() {
             justifyContent: 'center', // Center the content vertically
           }}>
             <Text style={{ 
-              color: Colors.WHITE, 
+              color: themeTextColor, 
               fontSize: screenWidth * 0.06, 
               textAlign: 'center', 
               fontFamily: 'Poppins-Medium', 
@@ -107,7 +123,7 @@ export default function LoginScreen() {
               Welcome Back!
             </Text>
             <Text style={{ 
-              color: Colors.WHITE, 
+              color: themeTextColor, 
               fontSize: screenWidth * 0.035, 
               fontWeight: '500', 
               textAlign: 'center', 
@@ -122,6 +138,7 @@ export default function LoginScreen() {
                 keyboardType="email-address"
                 textContentType="emailAddress"
                 placeholder="Enter Email"
+                placeholderTextColor={themePlaceholderTextColor}
                 value={email}
                 onChangeText={setEmail}
                 style={{ 
@@ -130,10 +147,10 @@ export default function LoginScreen() {
                   borderRadius: 10, 
                   marginTop: 20, 
                   borderWidth: 1, 
-                  borderColor: Colors.WHITE, 
-                  backgroundColor: Colors.WHITE, 
+                  borderColor: themeBorderColor, 
+                  backgroundColor: themeInputBackgroundColor, 
                   paddingLeft: 20, 
-                  color: Colors.SECONDARY, 
+                  color: themeInputTextColor, 
                   fontFamily: 'Poppins-Medium', 
                   fontSize: screenWidth * 0.035
                 }}
@@ -143,6 +160,7 @@ export default function LoginScreen() {
                   autoCompleteType="password"
                   secureTextEntry={!passwordVisible}
                   placeholder="Enter Password"
+                  placeholderTextColor={themePlaceholderTextColor}
                   value={password}
                   onChangeText={setPassword}
                   style={{ 
@@ -150,10 +168,10 @@ export default function LoginScreen() {
                     height: screenHeight * 0.06, 
                     borderRadius: 10, 
                     borderWidth: 1, 
-                    borderColor: Colors.WHITE, 
-                    backgroundColor: Colors.WHITE, 
+                    borderColor: themeBorderColor, 
+                    backgroundColor: themeInputBackgroundColor, 
                     paddingLeft: 20, 
-                    color: Colors.SECONDARY, 
+                    color: themeInputTextColor, 
                     fontFamily: 'Poppins-Medium', 
                     fontSize: screenWidth * 0.035 
                   }}
@@ -162,12 +180,12 @@ export default function LoginScreen() {
                   onPress={() => setPasswordVisible(!passwordVisible)} 
                   style={styles.eyeIcon}
                 >
-                  <Feather name={passwordVisible ? 'eye-off' : 'eye'} size={24} color={Colors.PRIMARY} />
+                  <Feather name={passwordVisible ? 'eye-off' : 'eye'} size={24} color={themeEyeIconColor} />
                 </TouchableOpacity>
               </View>
               <Text 
                 style={{ 
-                  color: Colors.WHITE, 
+                  color: themeTextColor, 
                   fontSize: screenWidth * 0.035, 
                   fontWeight: '500', 
                   textAlign: 'right', 
@@ -187,19 +205,19 @@ export default function LoginScreen() {
                   height: screenHeight * 0.06,
                   borderRadius: 10,
                   marginTop: 20,
-                  backgroundColor: Colors.WHITE,
+                  backgroundColor: themeButtonBackgroundColor,
                   borderWidth: 1,
-                  borderColor: Colors.WHITE,
+                  borderColor: themeButtonTextColor,
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator size="small" color={Colors.PRIMARY} />
+                  <ActivityIndicator size="small" color={themeButtonTextColor} />
                 ) : (
                   <Text style={{ 
-                    color: Colors.PRIMARY, 
+                    color: themeButtonTextColor, 
                     fontFamily: 'Poppins-Medium', 
                     fontSize: screenWidth * 0.035 
                   }}>
@@ -209,7 +227,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
             </View>
             <Text style={{ 
-              color: Colors.WHITE, 
+              color: themeTextColor, 
               fontSize: screenWidth * 0.035, 
               fontWeight: '500', 
               textAlign: 'center', 
@@ -221,13 +239,15 @@ export default function LoginScreen() {
             <TouchableOpacity 
               style={{ 
                 flexDirection: 'row', 
-                backgroundColor: Colors.WHITE, 
+                backgroundColor: themeButtonBackgroundColor, 
                 width: screenWidth * 0.9, 
                 height: screenHeight * 0.06, 
                 borderRadius: 10, 
                 marginTop: 10, 
                 alignItems: 'center', 
-                justifyContent: 'center' 
+                justifyContent: 'center',
+                borderWidth: 1,
+                borderColor: themeButtonTextColor,
               }}
               onPress={handleGoogleAuth}
               disabled={loading}
@@ -235,7 +255,7 @@ export default function LoginScreen() {
               <Image source={GoogleIcon} style={{ width: 35, height: 35 }} />
               <Text style={{ 
                 fontSize: screenWidth * 0.035, 
-                color: Colors.SECONDARY, 
+                color: themeInputTextColor, 
                 marginLeft: 10, 
                 fontFamily: 'Poppins-Medium' 
               }}>
@@ -248,7 +268,7 @@ export default function LoginScreen() {
               justifyContent: 'center' 
             }}>
               <Text style={{ 
-                color: Colors.WHITE, 
+                color: themeTextColor, 
                 fontSize: screenWidth * 0.035, 
                 fontWeight: '500', 
                 fontFamily: 'Poppins-Medium',  
@@ -257,7 +277,7 @@ export default function LoginScreen() {
               </Text>
               <Text 
                 style={{ 
-                  color: Colors.WHITE, 
+                  color: themeTextColor, 
                   fontSize: screenWidth * 0.035, 
                   fontWeight: '500', 
                   fontFamily: 'Poppins-Medium',  
@@ -280,8 +300,8 @@ export default function LoginScreen() {
         }}
       >
         <View style={styles.centeredView}>
-          <View style={styles.modalView}>
-            <Text style={styles.modalText}>{errorMessage}</Text>
+          <View style={[styles.modalView, { backgroundColor: themeModalBackgroundColor }]}>
+            <Text style={[styles.modalText, { color: themeModalTextColor }]}>{errorMessage}</Text>
             <TouchableOpacity
               style={[styles.button, styles.buttonClose]}
               onPress={() => setModalVisible(!modalVisible)}
@@ -301,7 +321,6 @@ const styles = StyleSheet.create({
     right: 20,
     top: 15,
     zIndex: 1,
-    color: '#9835FF',
   },
   centeredView: {
     flex: 1,
@@ -311,7 +330,6 @@ const styles = StyleSheet.create({
   },
   modalView: {
     margin: 20,
-    backgroundColor: 'white',
     borderRadius: 20,
     padding: 30,
     alignItems: 'center',
@@ -345,7 +363,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: 'center',
     fontSize: 18,
-    color: '#333', // Neutral color for better readability
     lineHeight: 24, // Improved spacing for multi-line text
     fontFamily: 'Poppins',
   },

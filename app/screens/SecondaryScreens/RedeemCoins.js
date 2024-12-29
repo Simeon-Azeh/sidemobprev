@@ -7,6 +7,7 @@ import DesignUi from '../../../assets/Images/DesignUi.png';
 import DesignUi2 from '../../../assets/Images/DesignUi2.png';
 import { getFirestore, doc, getDocs, updateDoc, collection, addDoc, query, where } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -16,6 +17,7 @@ const RedeemCoinsPage = ({ navigation }) => {
   const [totalCoins, setTotalCoins] = useState(0);
   const [loading, setLoading] = useState(true);
   const [redeeming, setRedeeming] = useState(false);
+  const colorScheme = useColorScheme();
 
   const auth = getAuth();
   const db = getFirestore();
@@ -122,17 +124,17 @@ const RedeemCoinsPage = ({ navigation }) => {
   };
 
   const renderItem = ({ item }) => (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY, marginBottom: 15 }]}>
       <View style={styles.cardContent}>
         <Ionicons name={item.icon} size={30} color={Colors.PRIMARY} style={styles.icon} />
-        <Text style={styles.cardText}>{item.name}</Text>
+        <Text style={[styles.cardText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT }]}>{item.name}</Text>
       </View>
       <View style={styles.cardCutOut}>
-        <View style={styles.circleLeft} />
-        <Text style={styles.dash}>--------------------------------</Text>
-        <View style={styles.circleRight} />
+        <View style={[styles.circleLeft, { backgroundColor: colorScheme === 'light' ? '#f2f2f2' : Colors.DARK_BACKGROUND }]} />
+        <Text style={[styles.dash, { color: colorScheme === 'light' ? '#f2f2f2' : Colors.DARK_BACKGROUND }]}>--------------------------------</Text>
+        <View style={[styles.circleRight, { backgroundColor: colorScheme === 'light' ? '#f2f2f2' : Colors.DARK_BACKGROUND }]} />
       </View>
-      <TouchableOpacity style={styles.redeemButton} onPress={() => handleRedeemPress(item)}>
+      <TouchableOpacity style={[styles.redeemButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BUTTON, borderColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BORDER, borderWidth: colorScheme === 'light' ? 0 : 1 }]} onPress={() => handleRedeemPress(item)}>
         <Text style={styles.redeemButtonText}>
           REDEEM {item.coins} <FontAwesome6 name="coins" size={14} color="#fff" />
         </Text>
@@ -141,9 +143,9 @@ const RedeemCoinsPage = ({ navigation }) => {
   );
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colorScheme === 'light' ? Colors.LIGHT_BACKGROUND : Colors.DARK_BACKGROUND }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_HEADER }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={32} color="#fff" />
         </TouchableOpacity>
@@ -156,7 +158,7 @@ const RedeemCoinsPage = ({ navigation }) => {
       </View>
 
       {/* Education Section */}
-      <Text style={styles.sectionTitle}>Education</Text>
+      <Text style={[styles.sectionTitle, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT }]}>Education</Text>
       <FlatList
         data={educationItems}
         renderItem={renderItem}
@@ -167,7 +169,7 @@ const RedeemCoinsPage = ({ navigation }) => {
       />
 
       {/* Our Partners Section */}
-      <Text style={styles.sectionTitle}>Our Partners</Text>
+      <Text style={[styles.sectionTitle, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT }]}>Our Partners</Text>
       <FlatList
         data={partners}
         renderItem={renderItem}
@@ -186,7 +188,7 @@ const RedeemCoinsPage = ({ navigation }) => {
           onRequestClose={handleCloseModal}
         >
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY }]}>
               <TouchableOpacity style={styles.closeButton} onPress={handleCloseModal}>
                 <Ionicons name="close" size={32} color={Colors.PRIMARY} />
               </TouchableOpacity>
@@ -194,14 +196,14 @@ const RedeemCoinsPage = ({ navigation }) => {
                 source={redeemImg} // Replace with actual image source
                 style={styles.modalImage}
               />
-              <Text style={styles.modalTitle}>Are you sure you want to redeem?</Text>
-              <Text style={styles.modalDescription}>
+              <Text style={[styles.modalTitle, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT }]}>Are you sure you want to redeem?</Text>
+              <Text style={[styles.modalDescription, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT }]}>
                 Do you want to redeem {selectedItem.coins} coins for {selectedItem.name}?
               </Text>
               {redeeming ? (
                 <ActivityIndicator size="large" color={Colors.PRIMARY} />
               ) : (
-                <TouchableOpacity style={styles.confirmButton} onPress={handleRedeemConfirm}>
+                <TouchableOpacity style={[styles.confirmButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BUTTON, borderColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BORDER, borderWidth: colorScheme === 'light' ? 0 : 1 }]} onPress={handleRedeemConfirm}>
                   <Text style={styles.confirmButtonText}>REDEEM</Text>
                 </TouchableOpacity>
               )}
@@ -218,7 +220,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    backgroundColor: '#9835ff',
     paddingVertical: 20,
     paddingHorizontal: 15,
     paddingTop: screenHeight * 0.06,
@@ -249,7 +250,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: screenWidth * 0.04,
     fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
     marginLeft: 20,
     marginVertical: 10,
   },
@@ -257,7 +257,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   card: {
-    backgroundColor: '#fff',
     borderRadius: 10,
     marginRight: 15,
     paddingHorizontal: 15,
@@ -280,7 +279,6 @@ const styles = StyleSheet.create({
   cardText: {
     fontSize: 16,
     fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
     marginVertical: 25,
   },
   cardCutOut: {
@@ -293,7 +291,6 @@ const styles = StyleSheet.create({
     right: 0,
   },
   dash: {
-    color: '#f2f2f2',
     fontSize: screenWidth * 0.04,
     textAlign: 'center',
   },
@@ -301,7 +298,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#f2f2f2', // Default background color
     position: 'absolute',
     left: -10,
   },
@@ -309,12 +305,10 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#f2f2f2', // Default background color
     position: 'absolute',
     right: -10,
   },
   redeemButton: {
-    backgroundColor: Colors.PRIMARY,
     paddingVertical: 5,
     paddingHorizontal: 20,
     borderRadius: 20,
@@ -333,7 +327,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)', // Semi-transparent background
   },
   modalContent: {
-    backgroundColor: '#fff',
     borderRadius: 10,
     width: screenWidth * 0.8,
     padding: 20,
@@ -353,18 +346,15 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: screenWidth * 0.04,
     fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
     marginBottom: 10,
   },
   modalDescription: {
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins',
-    color: Colors.SECONDARY,
     textAlign: 'center',
     marginBottom: 20,
   },
   confirmButton: {
-    backgroundColor: Colors.PRIMARY,
     paddingVertical: 5,
     paddingHorizontal: 20,
     borderRadius: 10,

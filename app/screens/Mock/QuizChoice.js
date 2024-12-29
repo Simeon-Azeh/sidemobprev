@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, TouchableOpacity, ScrollView, Image, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import Colors from '../../../assets/Utils/Colors';
 import DesignUi3 from '../../../assets/Images/DesignUi3.png';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -16,6 +16,7 @@ export default function QuizChoice({ navigation }) {
   const [numQuestions, setNumQuestions] = useState('');
   const [subjectsList, setSubjectsList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const fetchSubjects = async () => {
@@ -71,13 +72,13 @@ export default function QuizChoice({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Ionicons name="chevron-back" size={32} color={Colors.PRIMARY} />
+        <View style={[styles.header, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_HEADER }]}>
+          <TouchableOpacity style={[styles.backButton, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BUTTON }]} onPress={() => navigation.goBack()}>
+            <Ionicons name="chevron-back" size={32} color={colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Select Your Quiz</Text>
+          <Text style={[styles.headerTitle, { color: colorScheme === 'light' ? '#fff' : Colors.WHITE }]}>Select Your Quiz</Text>
           <Image source={DesignUi3} style={{ width: screenWidth * 0.8, height: screenHeight * 0.4, position: 'absolute', top: 20, left: 0, zIndex: -1, opacity: 0.8 }} />
         </View>
 
@@ -86,67 +87,96 @@ export default function QuizChoice({ navigation }) {
             <ActivityIndicator size="large" color={Colors.PRIMARY} />
           ) : (
             <>
-              <Text style={styles.label}>Select Subjects:</Text>
+              <Text style={[styles.label, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Select Subjects:</Text>
               <View style={styles.subjectsContainer}>
                 {subjectsList.map((subject, index) => (
                   <TouchableOpacity
                     key={index}
                     style={[
                       styles.subjectBox,
-                      selectedSubjects.includes(subject) && styles.selectedSubjectBox,
+                      { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : Colors.DARK_SECONDARY, borderColor: colorScheme === 'light' ? 'transparent' : Colors.DARK_BORDER, borderWidth: colorScheme === 'light' ? 0 : 1 },
+                      selectedSubjects.includes(subject) && { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff', borderColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff' },
                     ]}
                     onPress={() => handleSubjectSelect(subject)}
                   >
-                    <Text style={[styles.subjectText, selectedSubjects.includes(subject) && styles.selectedSubjectText]}>{subject}</Text>
+                    <Text style={[
+                      styles.subjectText,
+                      { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE },
+                      selectedSubjects.includes(subject) && { color: colorScheme === 'light' ? '#fff' : '#000' },
+                    ]}>{subject}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
 
-              <Text style={styles.label}>Select Difficulty Level:</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={difficulty}
-                  onValueChange={(itemValue) => setDifficulty(itemValue)}
-                >
-                  <Picker.Item label="Select Difficulty" value="" />
-                  <Picker.Item label="Easy" value="Easy" />
-                  <Picker.Item label="Medium" value="Medium" />
-                  <Picker.Item label="Hard" value="Hard" />
-                </Picker>
+              <Text style={[styles.label, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Select Difficulty Level:</Text>
+              <View style={styles.radioContainer}>
+                {['Easy', 'Medium', 'Hard'].map((level) => (
+                  <TouchableOpacity
+                    key={level}
+                    style={[
+                      styles.radioBox,
+                      { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : Colors.DARK_SECONDARY, borderColor: colorScheme === 'light' ? 'transparent' : Colors.DARK_BORDER, borderWidth: colorScheme === 'light' ? 0 : 1 },
+                      difficulty === level && { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff', borderColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff' },
+                    ]}
+                    onPress={() => setDifficulty(level)}
+                  >
+                    <Text style={[
+                      styles.radioText,
+                      { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE },
+                      difficulty === level && { color: colorScheme === 'light' ? '#fff' : '#000' },
+                    ]}>{level}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
 
-              <Text style={styles.label}>Time per Question (in seconds):</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={timePerQuestion}
-                  onValueChange={(itemValue) => setTimePerQuestion(itemValue)}
-                >
-                  <Picker.Item label="Select Time" value="" />
-                  <Picker.Item label="30 seconds" value="30" />
-                  <Picker.Item label="60 seconds" value="60" />
-                  <Picker.Item label="90 seconds" value="90" />
-                </Picker>
+              <Text style={[styles.label, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Time per Question (in seconds):</Text>
+              <View style={styles.radioContainer}>
+                {['30', '60', '90'].map((time) => (
+                  <TouchableOpacity
+                    key={time}
+                    style={[
+                      styles.radioBox,
+                      { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : Colors.DARK_SECONDARY, borderColor: colorScheme === 'light' ? 'transparent' : Colors.DARK_BORDER, borderWidth: colorScheme === 'light' ? 0 : 1 },
+                      timePerQuestion === time && { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff', borderColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff' },
+                    ]}
+                    onPress={() => setTimePerQuestion(time)}
+                  >
+                    <Text style={[
+                      styles.radioText,
+                      { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE },
+                      timePerQuestion === time && { color: colorScheme === 'light' ? '#fff' : '#000' },
+                    ]}>{time} seconds</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
 
-              <Text style={styles.label}>Number of Questions:</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={numQuestions}
-                  onValueChange={(itemValue) => setNumQuestions(itemValue)}
-                >
-                  <Picker.Item label="Select Number of Questions" value="" />
-                  <Picker.Item label="10 Questions" value="10" />
-                  <Picker.Item label="20 Questions" value="20" />
-                  <Picker.Item label="30 Questions" value="30" />
-                </Picker>
+              <Text style={[styles.label, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>Number of Questions:</Text>
+              <View style={styles.radioContainer}>
+                {['10', '20', '30'].map((num) => (
+                  <TouchableOpacity
+                    key={num}
+                    style={[
+                      styles.radioBox,
+                      { backgroundColor: colorScheme === 'light' ? '#f0f0f0' : Colors.DARK_SECONDARY, borderColor: colorScheme === 'light' ? 'transparent' : Colors.DARK_BORDER, borderWidth: colorScheme === 'light' ? 0 : 1 },
+                      numQuestions === num && { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff', borderColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff' },
+                    ]}
+                    onPress={() => setNumQuestions(num)}
+                  >
+                    <Text style={[
+                      styles.radioText,
+                      { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE },
+                      numQuestions === num && { color: colorScheme === 'light' ? '#fff' : '#000' },
+                    ]}>{num} Questions</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
             </>
           )}
         </View>
       </ScrollView>
 
-      <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-        <Text style={styles.nextButtonText}>Next</Text>
+      <TouchableOpacity style={[styles.nextButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BUTTON }]} onPress={handleNext}>
+        <Text style={[styles.nextButtonText, { color: colorScheme === 'light' ? Colors.WHITE : Colors.DARK_TEXT }]}>Next</Text>
       </TouchableOpacity>
     </View>
   );
@@ -155,7 +185,6 @@ export default function QuizChoice({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   scrollContainer: {
     paddingBottom: screenHeight * 0.1, // Add space for the fixed button
@@ -163,7 +192,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.PRIMARY,
     paddingHorizontal: 20,
     paddingTop: 20,
     height: screenHeight * 0.35, // Keep header height
@@ -177,14 +205,12 @@ const styles = StyleSheet.create({
     left: 20,
     top: 80,
     zIndex: 1,
-    backgroundColor: '#fff',
     borderRadius: 50,
     padding: 5,
   },
   headerTitle: {
     fontSize: screenWidth * 0.05,
     fontFamily: 'Poppins-Medium',
-    color: '#fff',
     textAlign: 'center',
     flex: 1,
   },
@@ -195,7 +221,6 @@ const styles = StyleSheet.create({
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins-Medium',
     marginVertical: 10,
-    color: Colors.SECONDARY,
   },
   subjectsContainer: {
     flexDirection: 'row',
@@ -206,33 +231,34 @@ const styles = StyleSheet.create({
     width: '48%',
     padding: 10,
     marginVertical: 5,
-    backgroundColor: '#f0f0f0',
     borderRadius: 5,
     alignItems: 'center',
-  },
-  selectedSubjectBox: {
-    backgroundColor: Colors.PRIMARY,
   },
   subjectText: {
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins-Medium',
-    color: Colors.SECONDARY,
   },
-  selectedSubjectText: {
-    color: '#fff',
+  radioContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ddd',
+  radioBox: {
+    width: '48%',
+    padding: 10,
+    marginVertical: 5,
     borderRadius: 5,
-    marginVertical: 10,
+    alignItems: 'center',
+  },
+  radioText: {
+    fontSize: screenWidth * 0.035,
+    fontFamily: 'Poppins-Medium',
   },
   nextButton: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: Colors.PRIMARY,
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -241,6 +267,5 @@ const styles = StyleSheet.create({
   nextButtonText: {
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins-Medium',
-    color: Colors.WHITE,
   },
 });

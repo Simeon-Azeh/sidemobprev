@@ -5,6 +5,7 @@ import Colors from '../../../assets/Utils/Colors';
 import { getFirestore, doc, updateDoc, arrayUnion, collection, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import CustomButton from '../CustomButton';
+import { useColorScheme } from 'react-native';
 
 export default function GroupChatHeader({ group, navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -13,6 +14,7 @@ export default function GroupChatHeader({ group, navigation }) {
   const [loading, setLoading] = useState(false);
   const auth = getAuth();
   const currentUser = auth.currentUser;
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -68,7 +70,7 @@ export default function GroupChatHeader({ group, navigation }) {
   };
 
   return (
-    <View style={styles.headerContainer}>
+    <View style={[styles.headerContainer, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_BACKGROUND }]}>
       {/* Back Button */}
       <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
         <Ionicons name="chevron-back" size={24} color="#fff" />
@@ -133,7 +135,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 12,
     paddingTop: 40, // Add padding at the top
-    backgroundColor: Colors.PRIMARY,
   },
   backButton: {
     marginRight: 10,

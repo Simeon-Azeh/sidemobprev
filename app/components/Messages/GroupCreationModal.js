@@ -7,6 +7,7 @@ import Colors from '../../../assets/Utils/Colors';
 import { getFirestore, collection, addDoc, getDocs } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import DefaultAvatar from '../../../assets/Images/defaultAvatar.jpg';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -33,6 +34,7 @@ export default function GroupCreationModal({ visible, onClose }) {
   const [uploading, setUploading] = useState(false);
   const [users, setUsers] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -140,19 +142,21 @@ export default function GroupCreationModal({ visible, onClose }) {
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={styles.modalContainer}>
-        <Text style={styles.modalTitle}>Create New Group</Text>
+      <View style={[styles.modalContainer, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
+        <Text style={[styles.modalTitle, { color: colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE }]}>Create New Group</Text>
         
         <TextInput
-          style={[styles.input, styles.semiBoldFont]}
+          style={[styles.input, styles.semiBoldFont, { backgroundColor: colorScheme === 'light' ? '#f9f9f9' : Colors.DARK_SECONDARY, color: colorScheme === 'light' ? '#000' : '#fff' }]}
           placeholder="Group Name"
+          placeholderTextColor={colorScheme === 'light' ? '#888' : '#ccc'}
           value={groupName}
           onChangeText={setGroupName}
         />
         
         <TextInput
-          style={[styles.input, styles.semiBoldFont]}
+          style={[styles.input, styles.semiBoldFont, { backgroundColor: colorScheme === 'light' ? '#f9f9f9' : Colors.DARK_SECONDARY, color: colorScheme === 'light' ? '#000' : '#fff' }]}
           placeholder="Group Description"
+          placeholderTextColor={colorScheme === 'light' ? '#888' : '#ccc'}
           value={groupDescription}
           onChangeText={setGroupDescription}
         />
@@ -166,16 +170,16 @@ export default function GroupCreationModal({ visible, onClose }) {
         
         <View style={styles.visibilityContainer}>
           <TouchableOpacity
-            style={[styles.visibilityButton, isPublic && styles.selectedVisibilityButton]}
+            style={[styles.visibilityButton, isPublic && styles.selectedVisibilityButton, { backgroundColor: isPublic ? Colors.PRIMARY : (colorScheme === 'light' ? '#f7f7f7' : Colors.DARK_SECONDARY) }]}
             onPress={() => setIsPublic(true)}
           >
-            <Text style={[styles.visibilityButtonText, isPublic && styles.selectedVisibilityButtonText]}>Public</Text>
+            <Text style={[styles.visibilityButtonText, isPublic && styles.selectedVisibilityButtonText, { color: isPublic ? '#fff' : Colors.PRIMARY }]}>Public</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.visibilityButton, !isPublic && styles.selectedVisibilityButton]}
+            style={[styles.visibilityButton, !isPublic && styles.selectedVisibilityButton, { backgroundColor: !isPublic ? Colors.PRIMARY : (colorScheme === 'light' ? '#f7f7f7' : Colors.DARK_SECONDARY) }]}
             onPress={() => setIsPublic(false)}
           >
-            <Text style={[styles.visibilityButtonText, !isPublic && styles.selectedVisibilityButtonText]}>Private</Text>
+            <Text style={[styles.visibilityButtonText, !isPublic && styles.selectedVisibilityButtonText, { color: !isPublic ? '#fff' : Colors.PRIMARY }]}>Private</Text>
           </TouchableOpacity>
         </View>
         
@@ -184,13 +188,13 @@ export default function GroupCreationModal({ visible, onClose }) {
           keyExtractor={(item) => item.email}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[styles.userItem, selectedUsers.includes(item) && styles.selectedUserItem]}
+              style={[styles.userItem, selectedUsers.includes(item) && styles.selectedUserItem, { backgroundColor: selectedUsers.includes(item) ? Colors.PRIMARY_LIGHT : (colorScheme === 'light' ? '#f9f9f9' : Colors.DARK_SECONDARY) }]}
               onPress={() => toggleUserSelection(item)}
             >
               <Image source={{ uri: item.avatar }} style={styles.userAvatar} />
               <View style={styles.userInfo}>
-                <Text style={styles.userName}>{item.firstName} {item.lastName}</Text>
-                <Text style={styles.userEmail}>{item.email}</Text>
+                <Text style={[styles.userName, { color: colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE }]}>{item.firstName} {item.lastName}</Text>
+                <Text style={[styles.userEmail, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>{item.email}</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -200,10 +204,10 @@ export default function GroupCreationModal({ visible, onClose }) {
           <ActivityIndicator size="large" color={Colors.PRIMARY} style={styles.loader} />
         ) : (
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.createButton} onPress={handleCreateGroup}>
+            <TouchableOpacity style={[styles.createButton, { backgroundColor: Colors.PRIMARY, borderColor: Colors.PRIMARY }]} onPress={handleCreateGroup}>
               <Text style={styles.buttonText}>Create Group</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
+            <TouchableOpacity style={[styles.cancelButton, { backgroundColor: colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_SECONDARY, borderColor: colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_SECONDARY }]} onPress={onClose}>
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -211,8 +215,8 @@ export default function GroupCreationModal({ visible, onClose }) {
       </View>
 
       <Modal visible={modalVisible} animationType="slide">
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalTitle}>Select Group Icon</Text>
+        <View style={[styles.modalContainer, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND }]}>
+          <Text style={[styles.modalTitle, { color: colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE }]}>Select Group Icon</Text>
           <FlatList
             data={avatars}
             keyExtractor={(item) => item}
@@ -223,7 +227,7 @@ export default function GroupCreationModal({ visible, onClose }) {
             )}
             numColumns={3}
           />
-          <TouchableOpacity style={styles.uploadButton} onPress={handlePickImage}>
+          <TouchableOpacity style={[styles.uploadButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_PRIMARY, borderColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_PRIMARY, borderWidth: 1 }]} onPress={handlePickImage}>
             {uploading ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -233,7 +237,7 @@ export default function GroupCreationModal({ visible, onClose }) {
               </>
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+          <TouchableOpacity style={[styles.closeButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_PRIMARY, borderColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_PRIMARY, borderWidth: 1 }]} onPress={() => setModalVisible(false)}>
             <Text style={styles.closeButtonText}>Close</Text>
           </TouchableOpacity>
         </View>
@@ -246,7 +250,6 @@ const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#fff',
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
     justifyContent: 'center',
@@ -254,7 +257,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontFamily: 'Poppins-Medium',
-    color: Colors.PRIMARY,
     marginBottom: 15,
     textAlign: 'center',
   },
@@ -265,14 +267,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     marginBottom: 15,
-    backgroundColor: '#f9f9f9',
   },
   semiBoldFont: {
     fontFamily: 'Poppins-SemiBold',
   },
   uploadButton: {
     flexDirection: 'row',
-    backgroundColor: Colors.PRIMARY,
     paddingVertical: 10,
     borderRadius: 8,
     alignItems: 'center',
@@ -305,13 +305,11 @@ const styles = StyleSheet.create({
     borderColor: Colors.PRIMARY,
     alignItems: 'center',
     marginHorizontal: 5,
-    backgroundColor: '#f7f7f7',
   },
   selectedVisibilityButton: {
     backgroundColor: Colors.PRIMARY,
   },
   visibilityButtonText: {
-    color: Colors.PRIMARY,
     fontFamily: 'Poppins-Medium',
   },
   selectedVisibilityButtonText: {
@@ -324,7 +322,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
     marginBottom: 5,
-    backgroundColor: '#f9f9f9',
     borderRadius: 8,
   },
   selectedUserItem: {
@@ -342,12 +339,10 @@ const styles = StyleSheet.create({
   userName: {
     fontFamily: 'Poppins',
     fontSize: 16,
-    color: Colors.PRIMARY,
   },
   userEmail: {
     fontFamily: 'Poppins',
     fontSize: 14,
-    color: Colors.SECONDARY,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -358,17 +353,17 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 15,
     borderRadius: 10,
-    backgroundColor: Colors.PRIMARY,
     alignItems: 'center',
     marginHorizontal: 5,
+    borderWidth: 1,
   },
   cancelButton: {
     flex: 1,
     paddingVertical: 15,
     borderRadius: 10,
-    backgroundColor: Colors.SECONDARY,
     alignItems: 'center',
     marginHorizontal: 5,
+    borderWidth: 1,
   },
   buttonText: {
     color: '#fff',
@@ -390,7 +385,6 @@ const styles = StyleSheet.create({
     margin: 10,
   },
   closeButton: {
-    backgroundColor: Colors.PRIMARY,
     padding: 10,
     borderRadius: 5,
     marginTop: 20,

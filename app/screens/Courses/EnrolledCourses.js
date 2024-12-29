@@ -6,6 +6,7 @@ import EnrolledCourseCard from '../../components/Courses/EnrolledCourseCard';
 import Colors from '../../../assets/Utils/Colors';
 import { getFirestore, collection, query, where, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth } from '../../../firebaseConfig';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -13,6 +14,7 @@ const EnrolledCourses = () => {
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
+  const colorScheme = useColorScheme(); // Get the current color scheme
 
   useEffect(() => {
     const fetchEnrolledCourses = async () => {
@@ -92,30 +94,30 @@ const EnrolledCourses = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, { backgroundColor: colorScheme === 'light' ? Colors.LIGHT_BACKGROUND : Colors.DARK_BACKGROUND }]}>
         <ActivityIndicator size="large" color={Colors.PRIMARY} />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <Text style={[styles.loadingText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT }]}>Loading...</Text>
       </View>
     );
   }
 
   if (enrolledCourses.length === 0) {
     return (
-      <View style={styles.noCoursesContainer}>
-        <Ionicons name="book-outline" size={100} color={Colors.SECONDARY} />
-        <Text style={styles.noCoursesText}>No enrolled courses available</Text>
-        <TouchableOpacity style={styles.exploreButton} onPress={() => navigation.navigate('Courses')}>
-          <Text style={styles.exploreButtonText}>Explore Courses</Text>
+      <View style={[styles.noCoursesContainer, { backgroundColor: colorScheme === 'light' ? Colors.LIGHT_BACKGROUND : Colors.DARK_BACKGROUND }]}>
+        <Ionicons name="book-outline" size={100} color={colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT_MUTED} />
+        <Text style={[styles.noCoursesText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.DARK_TEXT }]}>No enrolled courses available</Text>
+        <TouchableOpacity style={[styles.exploreButton, { backgroundColor: Colors.PRIMARY }]} onPress={() => navigation.navigate('Courses')}>
+          <Text style={[styles.exploreButtonText, { color: Colors.WHITE }]}>Explore Courses</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? Colors.LIGHT_BACKGROUND : Colors.DARK_BACKGROUND }]}>
+      <View style={[styles.header, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.DARK_SECONDARY }]}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={32} color="#fff" />
+          <Ionicons name="chevron-back" size={32} color={Colors.WHITE} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Enrolled Courses</Text>
         <Image source={require('../../../assets/Images/DesignUi4.png')} style={styles.headerImage} />
@@ -133,12 +135,10 @@ const EnrolledCourses = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.PRIMARY,
     paddingHorizontal: 20,
     paddingTop: 20,
     height: screenHeight * 0.2,
@@ -177,36 +177,30 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: Colors.SECONDARY,
     fontFamily: 'Poppins-Medium',
   },
   noCoursesContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
   },
   noCoursesText: {
     marginTop: 20,
     fontSize: 18,
-    color: Colors.SECONDARY,
     fontFamily: 'Poppins-Medium',
     textAlign: 'center',
   },
   exploreButton: {
     marginTop: 20,
-    backgroundColor: Colors.PRIMARY,
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
   },
   exploreButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontFamily: 'Poppins-Medium',
   },
