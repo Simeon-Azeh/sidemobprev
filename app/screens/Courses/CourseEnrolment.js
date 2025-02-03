@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, Image, ScrollView, StyleSheet, TouchableOpacity, TextInput, Dimensions, ActivityIndicator, useColorScheme } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
-import { getFirestore, doc, getDoc, collection, addDoc, getDocs, updateDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, collection, addDoc, getDocs, updateDoc, deleteDoc, query, where, arrayUnion } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
+import { decode } from 'html-entities';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -21,6 +22,7 @@ const CourseEnrolment = ({ route, navigation }) => {
   const [visibleReviews, setVisibleReviews] = useState(4);
   const auth = getAuth();
   const currentUser = auth.currentUser;
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -29,7 +31,11 @@ const CourseEnrolment = ({ route, navigation }) => {
       const courseDoc = await getDoc(courseRef);
 
       if (courseDoc.exists()) {
-        setCourse(courseDoc.data());
+        const courseData = courseDoc.data();
+        courseData.description = decode(courseData.description.replace(/<\/?[^>]+(>|$)/g, ""));
+        courseData.totalLessons = courseData.curriculum.reduce((acc, module) => acc + module.subModules.length, 0);
+        courseData.publishedAt = courseData.publishedAt.toDate().toLocaleDateString(); // Convert timestamp to string
+        setCourse(courseData);
       } else {
         console.log('No such document!');
       }
@@ -136,7 +142,7 @@ const CourseEnrolment = ({ route, navigation }) => {
         userId: currentUser.uid,
         courseId,
         courseTitle: course.title,
-        courseImage: course.image,
+        courseImage: course.cover,
       };
 
       try {
@@ -159,7 +165,7 @@ const CourseEnrolment = ({ route, navigation }) => {
       userId: currentUser.uid,
       courseId,
       courseTitle: course.title,
-      courseImage: course.image,
+      courseImage: course.cover,
       userEmail: currentUser.email,
     };
 
@@ -187,104 +193,104 @@ const CourseEnrolment = ({ route, navigation }) => {
   if (!course) {
     return (
       <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color={Colors.PRIMARY} />
-      <Text style={styles.loadingText}>Loading...</Text>
-    </View>
+        <ActivityIndicator size="large" color={Colors.PRIMARY} />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Image source={{ uri: course.image }} style={styles.backgroundImage} />
+    <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? '#f9f9f9' : Colors.DARK_BACKGROUND }]}>
+      <Image source={{ uri: course.cover }} style={styles.backgroundImage} />
       
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()} >
-        <MaterialIcons name="chevron-left" size={40} color={Colors.SECONDARY} />
+        <MaterialIcons name="chevron-left" size={40} color={colorScheme === 'light' ? Colors.SECONDARY : '#444'} />
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.scrollViewContent} style={styles.scrollView}>
         <View style={styles.courseHeader}>
-          <Text style={styles.courseTitle}>{course.title}</Text>
+          <Text style={[styles.courseTitle, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}>{course.title}</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity onPress={handleSaveCourse}>
-              <MaterialCommunityIcons name={saved ? "bookmark" : "bookmark-outline"} size={30} color={saved ? Colors.PRIMARY : Colors.SECONDARY} />
+              <MaterialCommunityIcons name={saved ? "bookmark" : "bookmark-outline"} size={30} color={saved ? Colors.PRIMARY : (colorScheme === 'light' ? Colors.SECONDARY : '#fff')} />
             </TouchableOpacity>
           </View>
         </View>
 
         <View style={styles.courseInfo}>
           <Image source={{ uri: course.avatar }} style={styles.authorImage} />
-          <Text style={styles.authorName}>{course.author}</Text>
-          <Text style={styles.courseCategory}>{course.category}</Text>
+          <Text style={[styles.authorName, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}>{course.author}</Text>
+          <Text style={[styles.courseCategory, { color: colorScheme === 'light' ? Colors.PRIMARY : '#fff', borderColor: colorScheme === 'light' ? '#888' : '#fff' }]}>{course.category}</Text>
         </View>
 
         <View style={styles.infoBoxes}>
-          <View style={styles.infoBox}>
-            <MaterialIcons name="calendar-today" size={30} color="#9835ff" style={{ marginRight: 10 }} />
+          <View style={[styles.infoBox, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BOX }]}>
+            <MaterialIcons name="calendar-today" size={30} color={colorScheme === 'light' ? '#9835ff' : '#fff'} style={{ marginRight: 10 }} />
             <View>
-              <Text style={{ fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, fontSize: screenWidth * 0.035 }}>Published</Text>
-              <Text style={styles.infoText}>{course.dateOfPublication}</Text>
+              <Text style={{ fontFamily: 'Poppins-Medium', color: colorScheme === 'light' ? Colors.SECONDARY : '#fff', fontSize: screenWidth * 0.035 }}>Published</Text>
+              <Text style={[styles.infoText, { color: colorScheme === 'light' ? '#888' : '#fff' }]}>{course.publishedAt}</Text>
             </View>
           </View>
-          <View style={styles.infoBox}>
-            <MaterialIcons name="people" size={30} color="#9835ff" style={{ marginRight: 10 }} />
+          <View style={[styles.infoBox, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BOX }]}>
+            <MaterialIcons name="people" size={30} color={colorScheme === 'light' ? '#9835ff' : '#fff'} style={{ marginRight: 10 }} />
             <View>
-              <Text style={{ fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, fontSize: screenWidth * 0.035 }}>Enrolled</Text>
-              <Text style={styles.infoText}>{course.enrollments || 0} People</Text>
+              <Text style={{ fontFamily: 'Poppins-Medium', color: colorScheme === 'light' ? Colors.SECONDARY : '#fff', fontSize: screenWidth * 0.035 }}>Enrolled</Text>
+              <Text style={[styles.infoText, { color: colorScheme === 'light' ? '#888' : '#fff' }]}>{course.enrollments || 0} People</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.descriptionContainer}>
-          <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.description}>
+          <Text style={[styles.sectionTitle, { color: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]}>Description</Text>
+          <Text style={[styles.description, { color: colorScheme === 'light' ? '#777' : '#fff' }]}>
             {showMore ? course.description : `${course.description.substring(0, 50)}...`}
           </Text>
           <TouchableOpacity onPress={() => setShowMore(!showMore)}>
-            <Text style={styles.readMore}>{showMore ? 'Read Less' : 'Read More'}</Text>
+            <Text style={[styles.readMore, { color: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]}>{showMore ? 'Read Less' : 'Read More'}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Learning Objectives</Text>
-          {course.learningObjectives && course.learningObjectives.map((objective, index) => (
+          <Text style={[styles.sectionTitle, { color: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]}>Learning Objectives</Text>
+          {course.learningOutcomes && course.learningOutcomes.map((objective, index) => (
             <View key={index} style={styles.objectiveContainer}>
-              <MaterialCommunityIcons name="check-circle" size={20} color={Colors.PRIMARY} />
-              <Text style={styles.objectiveText}>{objective}</Text>
+              <MaterialCommunityIcons name="check-circle" size={20} color={colorScheme === 'light' ? '#9835ff' : '#fff'}  />
+              <Text style={[styles.objectiveText, { color: colorScheme === 'light' ? '#555' : '#fff' }]}>{objective}</Text>
             </View>
           ))}
         </View>
 
         <View style={styles.infoBoxes}>
-          <View style={styles.infoBox}>
-            <MaterialIcons name="lock-clock" size={30} color="#9835ff" style={{ marginRight: 10 }} />
+          <View style={[styles.infoBox, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BOX }]}>
+            <MaterialIcons name="lock-clock" size={30} color={colorScheme === 'light' ? '#9835ff' : '#fff'} style={{ marginRight: 10 }} />
             <View>
-              <Text style={{ fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, fontSize: screenWidth * 0.035 }}>Time to Complete</Text>
-              <Text style={styles.infoText}>{course.timeToComplete}</Text>
+              <Text style={{ fontFamily: 'Poppins-Medium', color: colorScheme === 'light' ? Colors.SECONDARY : '#fff', fontSize: screenWidth * 0.035 }}>Time to Complete</Text>
+              <Text style={[styles.infoText, { color: colorScheme === 'light' ? '#888' : '#fff' }]}>{course.timeToComplete}</Text>
             </View>
           </View>
-          <View style={styles.infoBox}>
-            <MaterialIcons name="people" size={30} color="#9835ff" style={{ marginRight: 10 }} />
+          <View style={[styles.infoBox, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BOX }]}>
+            <MaterialIcons name="people" size={30} color={colorScheme === 'light' ? '#9835ff' : '#fff'} style={{ marginRight: 10 }} />
             <View>
-              <Text style={{ fontFamily: 'Poppins-Medium', color: Colors.SECONDARY, fontSize: screenWidth * 0.035 }}>Lessons</Text>
-              <Text style={styles.infoText}>{course.totalLessons} Lessons</Text>
+              <Text style={{ fontFamily: 'Poppins-Medium', color: colorScheme === 'light' ? Colors.SECONDARY : '#fff', fontSize: screenWidth * 0.035 }}>Lessons</Text>
+              <Text style={[styles.infoText, { color: colorScheme === 'light' ? '#888' : '#fff' }]}>{course.totalLessons} Lessons</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Course Material</Text>
-          {course.courseMaterials && course.courseMaterials.map((item, index) => (
+          <Text style={[styles.sectionTitle, { color: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]}>Course Material</Text>
+          {course.curriculum && course.curriculum.map((item, index) => (
             <View key={index} style={styles.materialContainer}>
               <TouchableOpacity onPress={() => toggleTopic(index)}>
-                <Text style={styles.materialTitle}>
+                <Text style={[styles.materialTitle, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}>
                   {item.title}
-                  <MaterialIcons name="keyboard-arrow-down" size={20} color="#333" style={styles.dropdownIcon} />
+                  <MaterialIcons name="keyboard-arrow-down" size={20} color={colorScheme === 'light' ? '#333' : '#fff'} style={styles.dropdownIcon} />
                 </Text>
               </TouchableOpacity>
-              {expandedTopicIndex === index && item.subMaterials && item.subMaterials.map((subtopic, subIndex) => (
+              {expandedTopicIndex === index && item.subModules && item.subModules.map((subtopic, subIndex) => (
                 <View key={subIndex} style={styles.subtopicContainer}>
-                  <Text style={styles.subtopicText}>
-                    <MaterialCommunityIcons name="lock" size={16} color="#888" /> {subtopic}
+                  <Text style={[styles.subtopicText, { color: colorScheme === 'light' ? '#333' : '#fff' }]}>
+                    <MaterialCommunityIcons name="lock" size={16} color={colorScheme === 'light' ? '#888' : '#fff'} /> {subtopic.title}
                   </Text>
                 </View>
               ))}
@@ -293,17 +299,17 @@ const CourseEnrolment = ({ route, navigation }) => {
         </View>
 
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Reviews</Text>
+          <Text style={[styles.sectionTitle, { color: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]}>Reviews</Text>
           {reviews.slice(0, visibleReviews).map((review, index) => (
-            <View key={index} style={styles.reviewContainer}>
+            <View key={index} style={[styles.reviewContainer, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BOX }]}>
               <Image source={{ uri: review.avatar }} style={styles.reviewAvatar} />
               <View style={styles.reviewContent}>
-                <Text style={styles.reviewUser}>{review.user}</Text>
-                <Text style={styles.reviewComment}>{review.comment}</Text>
+                <Text style={[styles.reviewUser, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}>{review.user}</Text>
+                <Text style={[styles.reviewComment, { color: colorScheme === 'light' ? '#333' : '#fff' }]}>{review.comment}</Text>
                 <View style={styles.reviewActions}>
                   <TouchableOpacity style={styles.reviewActionButton} onPress={() => handleLikeReview(review.id)}>
-                    <MaterialCommunityIcons name="thumb-up-outline" size={20} color={Colors.SECONDARY} />
-                    <Text style={styles.reviewActionText}>{review.likes.length}</Text>
+                    <MaterialCommunityIcons name="thumb-up-outline" size={20} color={colorScheme === 'light' ? Colors.SECONDARY : '#fff'} />
+                    <Text style={[styles.reviewActionText, { color: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]}>{review.likes.length}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -311,31 +317,32 @@ const CourseEnrolment = ({ route, navigation }) => {
           ))}
           {visibleReviews < reviews.length && (
             <TouchableOpacity onPress={handleShowMoreReviews}>
-              <Text style={styles.readMore}>Show More</Text>
+              <Text style={[styles.readMore, { color: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]}>Show More</Text>
             </TouchableOpacity>
           )}
           <View style={styles.addReviewContainer}>
             <TextInput
-              style={styles.addReviewInput}
+              style={[styles.addReviewInput, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_INPUT, color: colorScheme === 'light' ? '#000' : '#fff', borderColor: colorScheme === 'light' ? '#ddd' : '#444' }]}
               placeholder="Add your review..."
+              placeholderTextColor={colorScheme === 'light' ? '#888' : '#fff'}
               multiline
               value={newReview}
               onChangeText={setNewReview}
             />
-            <TouchableOpacity style={styles.addReviewButton} onPress={handleAddReview} disabled={loadingReview}>
+            <TouchableOpacity style={[styles.addReviewButton, {backgroundColor: colorScheme ==='light' ? Colors.PRIMARY : Colors.DARK_SECONDARY, borderColor: colorScheme === 'dark' ? Colors.DARK_BORDER : '#9835ff' }]} onPress={handleAddReview} disabled={loadingReview}>
               {loadingReview ? <ActivityIndicator color="#fff" /> : <Text style={styles.addReviewButtonText}>Submit Review</Text>}
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND, borderTopColor: colorScheme === 'light' ? '#ddd' : '#444' }]}>
         <View>
-          <Text style={{ fontFamily: 'Poppins-Medium', color: Colors.SECONDARY }}>Price: </Text>
-          <Text style={styles.price}>{course.price}</Text>
+          <Text style={{ fontFamily: 'Poppins-Medium', color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }}>Price: </Text>
+          <Text style={[styles.price, { color: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]}>{course.price}</Text>
         </View>
         <TouchableOpacity 
-          style={styles.enrollButton} 
+          style={[styles.enrollButton, { backgroundColor: colorScheme ==='light' ? Colors.PRIMARY : Colors.DARK_SECONDARY, borderColor: colorScheme === 'dark' ? Colors.DARK_BORDER : '#9835ff' }]} 
           onPress={handleEnroll}
           disabled={loadingEnroll || enrolled}
         >
@@ -345,8 +352,6 @@ const CourseEnrolment = ({ route, navigation }) => {
     </View>
   );
 };
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -446,7 +451,7 @@ const styles = StyleSheet.create({
   infoBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+ 
     borderRadius: 10,
     padding: 10,
     shadowColor: '#000',

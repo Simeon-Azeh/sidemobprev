@@ -32,7 +32,7 @@ export default function ChatCard({ chat }) {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setLastMessage({
           ...message,
-          timestamp: message.timestamp.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: formatTimestamp(message.timestamp.toDate()),
         });
       } else {
         setLastMessage(null);
@@ -83,6 +83,21 @@ export default function ChatCard({ chat }) {
       return text.substring(0, maxLength) + '...';
     }
     return text;
+  };
+
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) {
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
   };
 
   const themeBackgroundColor = colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY;

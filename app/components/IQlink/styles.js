@@ -16,6 +16,7 @@ const styles = StyleSheet.create({
 
 
     },
+   
     tabButton: {
         paddingVertical: 10,
     },
@@ -121,6 +122,11 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         marginBottom: 10,
     },
+    emptyContainer: {
+        flex: 1,
+        paddingHorizontal: 15,
+        paddingTop: 10
+    },
     actionButton: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -183,6 +189,7 @@ const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: '#ddd',
     },
+  
     commentInput: {
         flex: 1,
         fontSize: 14,
@@ -202,18 +209,13 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 20,
         right: 20,
-        backgroundColor: Colors.PRIMARY,
         width: 60,
         height: 60,
         borderRadius: 30,
-        justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.8,
-        shadowRadius: 2,
+        justifyContent: 'center',
         elevation: 5,
-    },
+      },
     communityCard: {
         backgroundColor: '#fff',
         borderRadius: 10,
@@ -258,40 +260,88 @@ const styles = StyleSheet.create({
     footerContainer: {
         justifyContent: 'center',
         alignItems: 'center',
-        padding: 20,
+        padding: 25,
     },
     footerText: {
         fontSize: 16,
         fontFamily: 'Poppins-Medium',
         textAlign: 'center',
+        marginBottom: 40,
     },
     modalContainer: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+        justifyContent: 'flex-end', // Makes modal slide up from bottom
         backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     modalContent: {
-        flex: 1,
-        width: '100%',
         backgroundColor: Colors.WHITE,
-        borderRadius: 10,
-        padding: 20,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        minHeight: '50%',
+        maxHeight: '80%',
+        width: '100%',
+        padding: 0, // Remove default padding
     },
     modalContentDark: {
-        flex: 1,
-        width: '100%',
         backgroundColor: Colors.DARK_SECONDARY,
-        borderRadius: 10,
-        padding: 20,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        minHeight: '50%',
+        maxHeight: '80%',
+        width: '100%',
+        padding: 0,
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontFamily: 'Poppins-Medium',
+        color: Colors.SECONDARY,
+    },
+    modalDragIndicator: {
+        width: 40,
+        height: 4,
+        backgroundColor: '#e0e0e0',
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginTop: 8,
+        marginBottom: 8,
     },
     closeModalButton: {
-        marginTop: 20,
-        alignItems: 'center',
+        padding: 8,
     },
     closeModalButtonText: {
         color: Colors.PRIMARY,
         fontSize: 16,
+        fontFamily: 'Poppins-Medium',
+    },
+    commentsList: {
+        flex: 1,
+        padding: 15,
+    },
+    commentInputWrapper: {
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        borderTopColor: '#eee',
+        backgroundColor: Colors.WHITE,
+    },
+    replyingToText: {
+        marginBottom: 8,
+        fontSize: 12,
+        fontFamily: 'Poppins',
+        color: Colors.PRIMARY,
+        paddingHorizontal: 5,
+    },
+    scrollContainer: {
+        flex: 1,
     },
     replyingToText: {
         marginBottom: 5,
@@ -301,6 +351,35 @@ const styles = StyleSheet.create({
     scrollContainer: {
         flex: 1,
     },
+    footerContainer: {
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      footerText: {
+        marginTop: 10,
+        fontSize: 16,
+        textAlign: 'center',
+        fontFamily: 'Poppins-Medium',
+      },
+      headerContainer: {
+        width: '100%',
+        backgroundColor: 'white',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 100,
+        elevation: 3,
+        borderBottomWidth: 1,
+        borderBottomColor: '#eee',
+    },
+    postsList: {
+        flex: 1,
+        paddingTop: 40, 
+    },
+    
+    
 });
 
 export default styles;

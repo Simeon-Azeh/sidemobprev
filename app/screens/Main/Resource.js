@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, Text, StyleSheet, TouchableOpacity, RefreshControl, TextInput, ActivityIndicator, Animated } from 'react-native';
+import { View, ScrollView, Text, StyleSheet, TouchableOpacity, RefreshControl, TextInput, ActivityIndicator } from 'react-native';
 import Header from '../../components/General/Header';
 import ResourceCategoryCarousel from '../../components/Resources/ResourceCategoryCarousel';
 import RecommendedResources from '../../components/Resources/RecommendedResources';
+import VideoCard from '../../components/Resources/VideoCard';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import { Dimensions } from 'react-native';
 import Colors from '../../../assets/Utils/Colors';
@@ -14,9 +15,10 @@ import { getAuth } from 'firebase/auth';
 
 const { width } = Dimensions.get('window');
 
-const fetchResources = async (type) => {
+const fetchResources = async (type, level) => {
   const db = getFirestore();
-  const q = query(collection(db, 'pdfDocuments'), where('type', '==', type));
+  const levelFolder = level?.toLowerCase() === 'alevel' ? 'Alevel' : 'Olevel';
+  const q = query(collection(db, `questions/${levelFolder}/documents`), where('type', '==', type));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
@@ -37,32 +39,11 @@ const fetchRecommendedResources = async (level) => {
   return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
-const NoRecommendedContent = ({ onSettingsPress }) => {
-  const colorScheme = useColorScheme(); // Get the current color scheme
-  const slideAnim = new Animated.Value(-100); // Initial value for slide animation
-
-  useEffect(() => {
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  return (
-    <Animated.View style={[styles.noRecommendedContent, { transform: [{ translateY: slideAnim }], backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY }]}>
-      <Icon name="info" size={40} color={colorScheme === 'light' ? Colors.PRIMARY : '#fff'} />
-      <Text style={[styles.noRecommendedText, { color: colorScheme === 'light' ? Colors.SECONDARY : '#fff' }]}>
-        We couldn't recommend you courses because we don't know what level you are. Please update your level in settings.
-      </Text>
-      <TouchableOpacity
-        style={[styles.submitButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]}
-        onPress={onSettingsPress}
-      >
-        <Text style={[styles.submitButtonText, { color: colorScheme === 'light' ? '#fff' : '#000' }]}>Update in Settings</Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
+const fetchVideos = async () => {
+  const db = getFirestore();
+  const q = query(collection(db, 'solutions'));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
 const QuestionsTab = ({ userId }) => {
@@ -74,15 +55,76 @@ const QuestionsTab = ({ userId }) => {
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
   const colorScheme = useColorScheme(); // Get the current color scheme
+  const [selectedLevel, setSelectedLevel] = useState('Alevel');
 
   useEffect(() => {
     const fetchQuestions = async () => {
-      const data = await fetchResources('questions');
-      setQuestions(data);
-      setFilteredQuestions(data);
+      setLoading(true);
+      try {
+        const data = await fetchResources('questions', selectedLevel);
+        setQuestions(data);
+        setFilteredQuestions(data);
+      } catch (error) {
+        console.error('Error fetching questions:', error);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchQuestions();
-  }, []);
+  }, [selectedLevel]); // Re-fetch when level changes
+
+  const LevelSelector = () => (
+    <View style={styles.levelSelector}>
+      <TouchableOpacity
+        style={[
+          styles.levelButton,
+          {
+            backgroundColor: selectedLevel === 'Alevel' 
+              ? Colors.PRIMARY 
+              : colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY,
+          },
+        ]}
+        onPress={() => setSelectedLevel('Alevel')}
+      >
+        <Text 
+          style={[
+            styles.levelButtonText, 
+            {
+              color: selectedLevel === 'Alevel' 
+                ? '#fff' 
+                : colorScheme === 'light' ? Colors.SECONDARY : '#fff'
+            }
+          ]}
+        >
+          A Level
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[
+          styles.levelButton,
+          {
+            backgroundColor: selectedLevel === 'Olevel' 
+              ? Colors.PRIMARY 
+              : colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY,
+          },
+        ]}
+        onPress={() => setSelectedLevel('Olevel')}
+      >
+        <Text 
+          style={[
+            styles.levelButtonText,
+            {
+              color: selectedLevel === 'Olevel' 
+                ? '#fff' 
+                : colorScheme === 'light' ? Colors.SECONDARY : '#fff'
+            }
+          ]}
+        >
+          O Level
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   useEffect(() => {
     const fetchUserAndRecommendedQuestions = async () => {
@@ -108,27 +150,20 @@ const QuestionsTab = ({ userId }) => {
   };
 
   const handleItemPress = async (item) => {
-    const db = getFirestore();
-    const docRef = doc(db, 'pdfDocuments', item.id);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const fileURL = docSnap.data().fileURL;
-      navigation.navigate('ResourceDocs', {
-        fileURL,
-        title: item.title,
-        exam: item.exam,
-        year: item.year,
-        level: item.level,
-      });
-    } else {
-      console.log('No such document!');
-    }
+    navigation.navigate('ResourceDocs', {
+      images: item.images, // Array of {pageNo, url}
+      title: item.title,
+      exam: item.exam,
+      year: item.year,
+      level: item.level,
+      totalPages: item.totalPages,
+      paper: item.paper
+    });
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    const data = await fetchResources('questions');
+    const data = await fetchResources('questions', selectedLevel);
     setQuestions(data);
     setFilteredQuestions(data);
     const level = await fetchUserLevel(userId);
@@ -147,6 +182,7 @@ const QuestionsTab = ({ userId }) => {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
+        <LevelSelector />
         <View style={[styles.searchContainer, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_SECONDARY }]}>
           <Icon name="search" size={20} color={colorScheme === 'light' ? '#000' : '#fff'} />
           <TextInput
@@ -158,10 +194,8 @@ const QuestionsTab = ({ userId }) => {
           />
         </View>
         <ResourceCategoryCarousel title="All Questions" data={filteredQuestions} onItemPress={handleItemPress} />
-        {recommendedQuestions.length > 0 ? (
+        {recommendedQuestions.length > 0 && (
           <RecommendedResources resources={recommendedQuestions} />
-        ) : (
-          <NoRecommendedContent onSettingsPress={() => navigation.navigate('Settings')} />
         )}
       </ScrollView>
       {loading && <ActivityIndicator size="large" color={Colors.PRIMARY} style={styles.loadingIndicator} />}
@@ -172,6 +206,7 @@ const QuestionsTab = ({ userId }) => {
 const SolutionsTab = () => {
   const [solutions, setSolutions] = useState([]);
   const [filteredSolutions, setFilteredSolutions] = useState([]);
+  const [videos, setVideos] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -180,11 +215,20 @@ const SolutionsTab = () => {
 
   useEffect(() => {
     const fetchSolutions = async () => {
-      const data = await fetchResources('solutions');
-      setSolutions(data);
-      setFilteredSolutions(data);
+      const data = await fetchResources('solutions', 'Alevel');
+      const dataOlevel = await fetchResources('solutions', 'Olevel');
+      setSolutions([...data, ...dataOlevel]);
+      setFilteredSolutions([...data, ...dataOlevel]);
     };
     fetchSolutions();
+  }, []);
+
+  useEffect(() => {
+    const fetchVideoData = async () => {
+      const data = await fetchVideos();
+      setVideos(data);
+    };
+    fetchVideoData();
   }, []);
 
   const handleSearch = (query) => {
@@ -218,11 +262,19 @@ const SolutionsTab = () => {
     }
   };
 
+  const handleVideoPress = (videoUrl) => {
+    // Handle video press, e.g., navigate to a video player screen
+    console.log('Video URL:', videoUrl);
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
-    const data = await fetchResources('solutions');
-    setSolutions(data);
-    setFilteredSolutions(data);
+    const data = await fetchResources('solutions', 'Alevel');
+    const dataOlevel = await fetchResources('solutions', 'Olevel');
+    setSolutions([...data, ...dataOlevel]);
+    setFilteredSolutions([...data, ...dataOlevel]);
+    const videoData = await fetchVideos();
+    setVideos(videoData);
     setRefreshing(false);
   };
 
@@ -244,7 +296,22 @@ const SolutionsTab = () => {
             onChangeText={handleSearch}
           />
         </View>
-        <ResourceCategoryCarousel title="Popular Solutions" data={filteredSolutions} onItemPress={handleItemPress} />
+       
+        <View style={styles.videoGrid}>
+          {videos.map((video) => (
+            <VideoCard
+              key={video.id}
+              title={video.title}
+              description={video.description}
+              thumbnail={video.thumbnail}
+              videoUrl={video.videoUrl}
+              year={video.year}
+              level={video.level}
+              duration={video.duration}
+              onPress={() => handleVideoPress(video.videoUrl)}
+            />
+          ))}
+        </View>
       </ScrollView>
       {loading && <ActivityIndicator size="large" color={Colors.PRIMARY} style={styles.loadingIndicator} />}
     </View>
@@ -291,28 +358,6 @@ export default function Resource() {
   );
 }
 
-const pickerStyles = StyleSheet.create({
-  inputAndroid: {
-    color: '#000',
-    padding: 10,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    marginBottom: 10,
-    fontFamily: 'Poppins-Medium',
-  },
-  inputIOS: {
-    color: '#000',
-    padding: 10,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    marginBottom: 10,
-  },
-  placeholder: {
-    color: '#999',
-  },
-});
 
 const styles = StyleSheet.create({
   modalContent: {
@@ -343,7 +388,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingTop: 15,
     paddingBottom: 70, // Space for floating button
-    
   },
   searchContainer: {
     flexDirection: 'row',
@@ -353,7 +397,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     marginBottom: 10,
-    
   },
   searchInput: {
     flex: 1,
@@ -389,4 +432,28 @@ const styles = StyleSheet.create({
     left: '50%',
     transform: [{ translateX: -25 }, { translateY: -25 }],
   },
+  levelSelector: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 15,
+    paddingHorizontal: 20,
+  },
+  levelButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    marginHorizontal: 5,
+  },
+  levelButtonText: {
+    fontFamily: 'Poppins-Medium',
+    fontSize: 14,
+  },
+    videoGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      paddingHorizontal: 10,
+      marginTop: 20,
+    },
+ 
 });

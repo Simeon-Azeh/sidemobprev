@@ -1,34 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { View, FlatList, TouchableOpacity, useColorScheme, RefreshControl, Text, StyleSheet } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, FlatList, TouchableOpacity, useColorScheme, RefreshControl, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
 import Header from '../../components/General/Header';
 import { useNavigation } from '@react-navigation/native';
 import Post from '../../components/IQlink/Post';
-import Community from '../../components/IQlink/Community';
-import Tabs from '../../components/IQlink/Tabs';
 import { getFirestore, collection, getDocs, doc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { auth } from '../../../firebaseConfig';
 import styles from '../../components/IQlink/styles';
-
-const communitiesData = [
-    {
-        id: '1',
-        name: 'Web developers',
-        description: 'This is an official community of developers ran by Sidec.',
-        membersCount: 123,
-        isVerified: true,
-        admin: {
-            profileImageUri: 'https://img.freepik.com/free-photo/development-opportunity-strategy-improvement-word_53876-13771.jpg?t=st=1723642342~exp=1723645942~hmac=468d9bc19ceb11dc541502146374f9b21ec3c4e0a58b69aa782b2ae24916219f&w=740',
-            name: 'Sidec Admin',
-        },
-    },
-    // Add more community objects here
-];
+import PostSkeleton from '../../components/IQlink/PostSkeleton';
+import { StatusBar } from 'react-native';
 
 export default function IQlink() {
-    const [selectedTab, setSelectedTab] = useState('Feeds');
     const [showAllComments, setShowAllComments] = useState({});
     const [replyingToPost, setReplyingToPost] = useState(null);
     const [commentText, setCommentText] = useState('');
@@ -37,9 +21,11 @@ export default function IQlink() {
     const [refreshing, setRefreshing] = useState(false);
     const [postsData, setPostsData] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isScrolling, setIsScrolling] = useState(false);
 
     const navigation = useNavigation();
     const colorScheme = useColorScheme();
+    const headerHeight = useRef(new Animated.Value(60)).current; // Adjust the initial height as needed
 
     useEffect(() => {
         fetchPosts();
@@ -172,99 +158,117 @@ export default function IQlink() {
         return formatDistanceToNow(new Date(time), { addSuffix: true });
     };
 
+    const handleScroll = () => {
+        setIsScrolling(true);
+        Animated.timing(headerHeight, {
+            toValue: 0,
+            duration: 300,
+            useNativeDriver: false,
+        }).start();
+        clearTimeout(handleScroll.timeout);
+        handleScroll.timeout = setTimeout(() => {
+            setIsScrolling(false);
+            Animated.timing(headerHeight, {
+                toValue: 60,
+                duration: 300,
+                useNativeDriver: false,
+            }).start();
+        }, 3000);
+    };
+
+    const renderSkeletons = () => (
+        <View>
+            {[...Array(3)].map((_, index) => (
+                <PostSkeleton key={index} colorScheme={colorScheme} />
+            ))}
+        </View>
+    );
+
     return (
-        <View style={[styles.container, { backgroundColor: colorScheme === 'light' ? Colors.LIGHT_BACKGROUND : Colors.DARK_BACKGROUND }]}>
-            <Header />
-            <Tabs selectedTab={selectedTab} setSelectedTab={setSelectedTab} colorScheme={colorScheme} />
-
-            {selectedTab === 'Feeds' && (
-                <FlatList
-                    data={postsData}
-                    renderItem={({ item }) => (
-                        <Post
-                            item={{ ...item, time: formatPostTime(item.time) }}
-                            navigateToProfile={navigateToProfile}
-                            toggleLikePost={toggleLikePost}
-                            postLikes={postLikes}
-                            toggleShowAllComments={toggleShowAllComments}
-                            showAllComments={showAllComments}
-                            toggleLikeComment={toggleLikeComment}
-                            commentLikes={commentLikes}
-                            replyingToPost={replyingToPost}
-                            setReplyingToPost={setReplyingToPost}
-                            commentText={commentText}
-                            setCommentText={setCommentText}
-                            colorScheme={colorScheme}
-                        />
-                    )}
-                    keyExtractor={item => item.id}
-                    showsVerticalScrollIndicator={false}
-                    style={styles.postsList}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            colors={[Colors.PRIMARY]}
-                            tintColor={Colors.PRIMARY}
-                        />
-                    }
-                    ListEmptyComponent={
-                        !loading && (
-                            <View style={styles.emptyContainer}>
-                                <Text style={[styles.emptyText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>
-                                    No posts yet available.
-                                </Text>
-                            </View>
-                        )
-                    }
-                    ListFooterComponent={
-                        postsData.length > 0 && (
-                            <View style={styles.footerContainer}>
-                                <Text style={[styles.footerText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>
-                                    No more posts available right now. Invite friends to share more content.
-                                </Text>
-                            </View>
-                        )
-                    }
-                />
+        <View style={[styles.container, { 
+            backgroundColor: colorScheme === 'light' ? Colors.LIGHT_BACKGROUND : Colors.DARK_BACKGROUND,
+            paddingTop: Platform.OS === 'ios' ? 40 : 0, // Add status bar padding
+        }]}>
+            <Animated.View style={[
+                styles.headerContainer,
+                { 
+                    height: headerHeight,
+                    backgroundColor: colorScheme === 'light' ? Colors.LIGHT_BACKGROUND : Colors.DARK_BACKGROUND,
+                    transform: [{
+                        translateY: headerHeight.interpolate({
+                            inputRange: [0, 60],
+                            outputRange: [-35, 0],
+                        })
+                    }]
+                }
+            ]}>
+                <Header />
+            </Animated.View>
+    
+            <FlatList
+             contentContainerStyle={{ 
+                paddingTop: 70,
+                paddingBottom: 20 
+            }}
+            data={loading ? [] : postsData}
+            renderItem={({ item }) => (
+                <View style={{ paddingHorizontal: 15 }}>
+                    <Post
+                        item={{ ...item, time: formatPostTime(item.time) }}
+                        navigateToProfile={navigateToProfile}
+                        toggleLikePost={toggleLikePost}
+                        postLikes={postLikes}
+                        toggleShowAllComments={toggleShowAllComments}
+                        showAllComments={showAllComments}
+                        toggleLikeComment={toggleLikeComment}
+                        commentLikes={commentLikes}
+                        replyingToPost={replyingToPost}
+                        setReplyingToPost={setReplyingToPost}
+                        commentText={commentText}
+                        setCommentText={setCommentText}
+                        colorScheme={colorScheme}
+                    />
+                </View>
             )}
-            {selectedTab === 'Communities' && (
-                <FlatList
-                    data={communitiesData}
-                    renderItem={({ item }) => (
-                        <Community
-                            item={item}
-                            navigateToProfile={navigateToProfile}
-                            colorScheme={colorScheme}
-                        />
-                    )}
-                    keyExtractor={item => item.id}
-                    showsVerticalScrollIndicator={false}
-                    style={styles.postsList}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={refreshing}
-                            onRefresh={onRefresh}
-                            colors={[Colors.PRIMARY]}
-                            tintColor={Colors.PRIMARY}
-                        />
-                    }
-                />
-            )}
+            ListEmptyComponent={loading ? renderSkeletons() : null}
+                keyExtractor={item => item.id}
+                showsVerticalScrollIndicator={false}
+                style={styles.postsList}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={[Colors.PRIMARY]}
+                        tintColor={Colors.PRIMARY}
+                    />
+                }
+                onScrollBeginDrag={handleScroll}
+                ListFooterComponent={
+                    <View style={styles.footerContainer}>
+                        <Ionicons name="sad-outline" size={24} color={colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE} />
+                        <Text style={[styles.footerText, { color: colorScheme === 'light' ? Colors.SECONDARY : Colors.WHITE }]}>
+                            No more posts available right now. Invite friends to share more content.
+                        </Text>
+                    </View>
+                }
+            />
 
-            <TouchableOpacity
-                style={[
-                    styles.fab,
-                    { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE },
-                ]}
-                onPress={() => navigation.navigate('UploadPost')}
-            >
-                <Ionicons
-                    name="add"
-                    size={32}
-                    color={colorScheme === 'light' ? '#fff' : '#000'}
-                />
-            </TouchableOpacity>
+            {!isScrolling && (
+                <TouchableOpacity
+                    style={[
+                        styles.fab,
+                        { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE },
+                    ]}
+                    onPress={() => navigation.navigate('UploadPost')}
+                >
+                    <Ionicons
+                        name="add"
+                        size={32}
+                        color={colorScheme === 'light' ? '#fff' : '#000'}
+                    />
+                </TouchableOpacity>
+            )}
         </View>
     );
 }
+

@@ -5,6 +5,8 @@ import Colors from '../../../assets/Utils/Colors';
 import NotificationsImg from '../../../assets/Images/NotificationsImg.png';
 import { getFirestore, collection, query, where, onSnapshot, doc, updateDoc, setDoc, getDoc } from 'firebase/firestore';
 import { auth } from '../../../firebaseConfig';
+import { useNavigation } from '@react-navigation/native';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -20,6 +22,8 @@ export default function Notifications() {
   const [notifications, setNotifications] = useState([]);
   const [selectedNotifications, setSelectedNotifications] = useState([]);
   const [showOptions, setShowOptions] = useState(null);
+  const navigation = useNavigation();
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -92,33 +96,33 @@ export default function Notifications() {
   const unreadNotifications = notifications.some(notification => notification.unread);
 
   const renderNotification = ({ item }) => (
-    <View style={styles.notificationContainer}>
+    <View style={[styles.notificationContainer, colorScheme === 'dark' && styles.darkNotificationContainer]}>
       <TouchableOpacity onPress={() => handleSelectNotification(item.id)}>
         <Icon 
           name={selectedNotifications.includes(item.id) ? 'check-square' : 'square'} 
           size={20} 
-          color={Colors.PRIMARY} 
+          color={colorScheme === 'dark' ? Colors.WHITE : Colors.PRIMARY} 
           style={styles.selectIcon} 
         />
       </TouchableOpacity>
       <View style={styles.notificationContent}>
-        <Icon name={item.type} size={20} color="#888" style={styles.notificationIcon} />
+        <Icon name={item.type} size={20} color={colorScheme === 'dark' ? Colors.WHITE : "#888"} style={styles.notificationIcon} />
         <View>
-          <Text style={[styles.notificationText, item.unread && styles.unreadNotification]}>
+          <Text style={[styles.notificationText, item.unread && styles.unreadNotification, colorScheme === 'dark' && styles.darkText]}>
             {item.content}
           </Text>
-          <Text style={styles.notificationDescription} numberOfLines={2} ellipsizeMode="tail">
+          <Text style={[styles.notificationDescription, colorScheme === 'dark' && styles.darkText]} numberOfLines={2} ellipsizeMode="tail">
             {item.description}
           </Text>
         </View>
       </View>
       <TouchableOpacity onPress={() => handleOptionsPress(item.id)}>
-        <Icon name="more-vertical" size={20} color="#888" />
+        <Icon name="more-vertical" size={20} color={colorScheme === 'dark' ? Colors.WHITE : "#888"} />
       </TouchableOpacity>
       {showOptions === item.id && (
-        <View style={styles.optionsContainer}>
+        <View style={[styles.optionsContainer, colorScheme === 'dark' && styles.darkOptionsContainer]}>
           <TouchableOpacity style={styles.optionButton} onPress={() => markNotificationAsRead(item.id)}>
-            <Text style={styles.optionText}>Mark as Read</Text>
+            <Text style={[styles.optionText, colorScheme === 'dark' && styles.darkText]}>Mark as Read</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -126,7 +130,13 @@ export default function Notifications() {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, colorScheme === 'dark' && styles.darkContainer]}>
+      <View style={[styles.header, colorScheme === 'dark' && styles.darkHeader]}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Icon name="chevron-left" size={32} color={Colors.WHITE} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, colorScheme === 'dark' && styles.darkText]}>Notifications</Text>
+      </View>
       {selectedNotifications.length > 0 && (
         <TouchableOpacity style={styles.deleteSelectedButton} onPress={() => setSelectedNotifications([])}>
           <Text style={styles.buttonText}>Deselect All</Text>
@@ -140,8 +150,8 @@ export default function Notifications() {
       {notifications.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Image source={NotificationsImg} style={styles.emptyImage} />
-          <Text style={styles.emptyText}>You're all caught up</Text>
-          <Text style={styles.emptyDescription}>There are no new notifications at the moment.</Text>
+          <Text style={[styles.emptyText, colorScheme === 'dark' && styles.darkText]}>You're all caught up</Text>
+          <Text style={[styles.emptyDescription, colorScheme === 'dark' && styles.darkText]}>There are no new notifications at the moment.</Text>
         </View>
       ) : (
         <FlatList
@@ -159,6 +169,28 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 15,
     backgroundColor: '#fff',
+  },
+  darkContainer: {
+    backgroundColor: '#000',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  darkHeader: {
+    backgroundColor: Colors.DARK_PRIMARY,
+    borderBottomColor: Colors.DARK_SECONDARY,
+  },
+  backButton: {
+    marginRight: 15,
+  },
+  headerTitle: {
+    fontSize: screenWidth * 0.05,
+    fontFamily: 'Poppins-Medium',
+    color: Colors.SECONDARY,
   },
   markAsReadButton: {
     backgroundColor: '#9835ff',
@@ -181,23 +213,26 @@ const styles = StyleSheet.create({
   notificationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start', // Align items to the start
-    paddingVertical: 15, // Adjusted padding
+    justifyContent: 'flex-start',
+    paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     position: 'relative',
   },
+  darkNotificationContainer: {
+    borderBottomColor: Colors.DARK_SECONDARY,
+  },
   selectIcon: {
-    marginRight: 15, // Increased margin for better spacing
-    alignSelf: 'center', // Center align the icon vertically
+    marginRight: 15,
+    alignSelf: 'center',
   },
   notificationContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1, // Take available space
+    flex: 1,
   },
   notificationIcon: {
-    marginRight: 15, // Adjusted margin for spacing
+    marginRight: 15,
   },
   notificationText: {
     fontSize: screenWidth * 0.035,
@@ -223,6 +258,10 @@ const styles = StyleSheet.create({
     width: screenWidth * 0.4,
     padding: 5,
   },
+  darkOptionsContainer: {
+    backgroundColor: Colors.DARK_SECONDARY,
+    borderColor: Colors.DARK_PRIMARY,
+  },
   optionButton: {
     paddingVertical: 10,
     paddingHorizontal: 15,
@@ -238,8 +277,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyImage: {
-    width: screenWidth * 0.8, // Adjusted width for better visibility
-    height: screenWidth * 0.8, // Adjusted height for better visibility
+    width: screenWidth * 0.8,
+    height: screenWidth * 0.8,
     marginBottom: 10,
   },
   emptyText: {
@@ -253,5 +292,8 @@ const styles = StyleSheet.create({
     color: Colors.SECONDARY,
     fontFamily: 'Poppins',
     marginTop: 5,
+  },
+  darkText: {
+    color: Colors.WHITE,
   },
 });

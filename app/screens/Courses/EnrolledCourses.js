@@ -22,33 +22,47 @@ const EnrolledCourses = () => {
         const user = auth.currentUser;
         if (user) {
           const db = getFirestore();
-          const enrollmentsQuery = query(collection(db, 'Enrollments'), where('userId', '==', user.uid));
+          const enrollmentsQuery = query(
+            collection(db, 'Enrollments'), 
+            where('userId', '==', user.uid)
+          );
           const enrollmentsSnapshot = await getDocs(enrollmentsQuery);
-          const courses = enrollmentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-          const coursesWithDetails = await Promise.all(courses.map(async (course) => {
-            const courseRef = doc(db, 'courses', course.courseId);
-            const courseDoc = await getDoc(courseRef);
-            const courseData = courseDoc.exists() ? courseDoc.data() : {};
-
-            const reviewsQuery = query(collection(db, 'reviews'), where('courseId', '==', course.courseId));
-            const reviewsSnapshot = await getDocs(reviewsQuery);
-            const reviews = reviewsSnapshot.docs.map(doc => doc.data());
-            const ratings = reviews.length > 0 ? reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length : 0;
-
-            return {
-              ...course,
-              title: courseData.title || 'Unknown',
-              image: courseData.image || '',
-              category: courseData.category || 'Unknown',
-              tutorName: courseData.author || 'Unknown',
-              tutorImage: courseData.avatar || '',
-              ratings,
-              reviews: reviews.length,
-              progress: course.progress || 0,
-            };
-          }));
-
+          
+          const coursesWithDetails = await Promise.all(
+            enrollmentsSnapshot.docs.map(async (enrollDoc) => {
+              const enrollData = enrollDoc.data();
+              
+              const courseRef = doc(db, 'courses', enrollData.courseId);
+              const courseDoc = await getDoc(courseRef);
+              console.log("Course document ID:", courseDoc.id); // Debug log
+              
+              const courseData = courseDoc.exists() ? courseDoc.data() : {};
+              const reviewsQuery = query(
+                collection(db, 'reviews'), 
+                where('courseId', '==', enrollData.courseId)
+              );
+              const reviewsSnapshot = await getDocs(reviewsQuery);
+              const reviews = reviewsSnapshot.docs.map(doc => doc.data());
+              const ratings = reviews.length > 0 
+                ? reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length 
+                : 0;
+    
+              return {
+                id: enrollDoc.id,
+                courseId: courseDoc.id, // Use document ID from courseDoc
+                progress: enrollData.progress || 0,
+                title: courseData.title || 'Unknown',
+                image: courseData.cover || courseData.courseImage || 'https://via.placeholder.com/150',
+                category: courseData.category || 'Unknown',
+                tutorName: courseData.author || 'Unknown',
+                tutorImage: courseData.avatar || '',
+                ratings,
+                reviews: reviews.length,
+                progress: enrollData.progress || 0,
+              };
+            })
+          );
+    
           setEnrolledCourses(coursesWithDetails);
         }
       } catch (error) {
@@ -61,25 +75,30 @@ const EnrolledCourses = () => {
     fetchEnrolledCourses();
   }, []);
 
-  const handleCoursePress = async (courseId, progress) => {
+  const handleCoursePress = async (enrollmentId, courseId, progress) => {
     try {
-      const user = auth.currentUser;
-      if (user) {
-        const db = getFirestore();
-        const enrollmentRef = doc(db, 'Enrollments', courseId);
-        await updateDoc(enrollmentRef, { progress: progress });
+        const user = auth.currentUser;
+        if (user) {
+            const db = getFirestore();
+            console.log("Navigation courseId:", courseId); // Debug log
+            
+            const enrollmentRef = doc(db, 'Enrollments', enrollmentId);
+            await updateDoc(enrollmentRef, { progress: progress });
 
-        if (progress === 0) {
-          navigation.navigate('CourseEnrolment', { courseId });
-        } else {
-          navigation.navigate('CourseMaterial', { courseId });
+            // Ensure courseId is valid before navigation
+            if (!courseId) {
+                throw new Error('Invalid course ID for navigation');
+            }
+
+            navigation.navigate('CourseMaterial', { 
+                courseId: courseId.toString(), // Ensure string type
+                courseTitle: item.title 
+            });
         }
-      }
     } catch (error) {
-      console.error("Error updating progress:", error);
+        console.error("Error in handleCoursePress:", error);
     }
-  };
-
+};
   const renderItem = ({ item }) => (
     <EnrolledCourseCard
       imageUri={item.image}
@@ -88,7 +107,7 @@ const EnrolledCourses = () => {
       hostImageUri={item.tutorImage}
       hostName={item.tutorName}
       progress={item.progress}
-      onPress={() => handleCoursePress(item.id, item.progress)}
+      onPress={() => handleCoursePress(item.id, item.courseId, item.progress)}
     />
   );
 

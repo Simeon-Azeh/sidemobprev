@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, TextInput, TouchableOpacity, StyleSheet, Text, Alert, ScrollView } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Alticon from 'react-native-vector-icons/Entypo';
@@ -9,10 +9,41 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { collection, addDoc, Timestamp } from 'firebase/firestore';
 import { auth, storage, firestore } from '../../../firebaseConfig';
 import { useColorScheme } from 'react-native';
+import { Audio } from 'expo-av';
 
-export default function InputSection({ message, setMessage, handleSend, handleFileAttachment, setShowEmojiPicker, chatType }) {
+export default function InputSection({ message, setMessage, handleSend, handleFileAttachment, setShowEmojiPicker, chatType, replyingTo }) {
   const [attachedFile, setAttachedFile] = useState(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recording, setRecording] = useState(null);
   const colorScheme = useColorScheme();
+
+  const toggleRecording = useCallback(async () => {
+    if (isRecording) {
+      // Stop recording
+      setIsRecording(false);
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      console.log('Recording stopped and stored at', uri);
+      // Handle the recorded audio file (e.g., upload it to Firebase)
+    } else {
+      // Start recording
+      setIsRecording(true);
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission to access microphone is required!');
+        return;
+      }
+      const recording = new Audio.Recording();
+      try {
+        await recording.prepareToRecordAsync(Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY);
+        await recording.startAsync();
+        setRecording(recording);
+        console.log('Recording started');
+      } catch (error) {
+        console.error('Failed to start recording', error);
+      }
+    }
+  }, [isRecording, recording]);
 
   const handleSendMessage = async () => {
     const currentMessage = message;
@@ -32,7 +63,7 @@ export default function InputSection({ message, setMessage, handleSend, handleFi
       });
       setAttachedFile(null); // Clear the attached file after sending the message
     } else {
-      handleSend(currentMessage, chatType === 'group' ? 'group' : 'individual');
+      handleSend(currentMessage, chatType === 'group' ? 'group' : 'individual', replyingTo);
     }
   };
 
@@ -75,7 +106,27 @@ export default function InputSection({ message, setMessage, handleSend, handleFi
   };
 
   return (
-    <View style={[styles.inputContainer, { backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND, borderTopColor: colorScheme === 'light' ? '#eee' : Colors.DARK_BORDER }]}>
+    <View style={[styles.inputContainer, { 
+      backgroundColor: colorScheme === 'light' ? '#fff' : Colors.DARK_BACKGROUND, 
+      borderTopColor: colorScheme === 'light' ? '#eee' : Colors.DARK_BORDER 
+    }]}>
+      {replyingTo && (
+        <View style={[styles.replyPreview, {
+          backgroundColor: colorScheme === 'light' ? '#f5f5f5' : Colors.DARK_SECONDARY
+        }]}>
+          <View style={styles.replyContent}>
+            <Text style={[styles.replyLabel, {
+              color: colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE
+            }]}>Replying to:</Text>
+            <Text style={styles.replyPreviewText} numberOfLines={1}>
+              {replyingTo.text}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => setReplyingTo(null)}>
+            <Icon name="close-circle" size={20} color={Colors.PRIMARY} />
+          </TouchableOpacity>
+        </View>
+      )}
       {attachedFile && (
         <View style={styles.attachmentContainer}>
           <MaterialIcons name="attachment" size={25} color={Colors.SECONDARY} />
@@ -103,8 +154,15 @@ export default function InputSection({ message, setMessage, handleSend, handleFi
         <TouchableOpacity style={styles.iconButton} onPress={handleFilePicker}>
           <MaterialIcons name="attach-file" size={25} color={Colors.SECONDARY} />
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.sendButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]} onPress={handleSendMessage}>
-          <Icon name="send" size={25} color={colorScheme === 'light' ? '#fff' : '#000'} />
+        <TouchableOpacity 
+          style={[styles.sendButton, { backgroundColor: colorScheme === 'light' ? Colors.PRIMARY : '#fff' }]} 
+          onPress={message.trim().length > 0 ? handleSendMessage : toggleRecording}
+        >
+          <Icon 
+            name={message.trim().length > 0 ? "send" : "mic"} 
+            size={25} 
+            color={colorScheme === 'light' ? '#fff' : '#000'} 
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -158,5 +216,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.SECONDARY,
     fontFamily: 'Poppins',
+  },
+  replyPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+  },
+  replyPreviewText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#555',
+    fontFamily: 'Poppins-Medium',
   },
 });

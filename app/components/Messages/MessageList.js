@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, SectionList, StyleSheet, Dimensions, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, SectionList, StyleSheet, Dimensions, KeyboardAvoidingView, Platform, Animated } from 'react-native';
 import Colors from '../../../assets/Utils/Colors';
 import { getAuth } from 'firebase/auth';
 import { Ionicons } from '@expo/vector-icons';
@@ -87,6 +87,16 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
     const isSentByCurrentUser = item.sentByUser === currentUser.email;
     const messageText = item.text || 'Message not available';
 
+    const animatedValue = useRef(new Animated.Value(50)).current; // Start from 50 pixels below
+
+    useEffect(() => {
+      Animated.timing(animatedValue, {
+        toValue: 0, // Move to original position
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+    }, []);
+
     const renderCheckMarks = () => {
       if (isSentByCurrentUser) {
         return (
@@ -103,10 +113,11 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
     };
 
     return (
-      <View
+      <Animated.View
         style={[
           styles.messageContainer,
           isSentByCurrentUser ? styles.userMessageContainer : styles.receivedMessageContainer,
+          { transform: [{ translateY: animatedValue }] } // Apply translation
         ]}
       >
         <TouchableOpacity
@@ -142,7 +153,7 @@ export default function MessageList({ messages, handleDeleteMessage, handleOpenM
         <View style={styles.messageFooter}>
           {renderCheckMarks()}
         </View>
-      </View>
+      </Animated.View>
     );
   };
 
@@ -235,10 +246,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginHorizontal: 10,
   },
-  line: {
+   line: {
     flex: 1,
     height: 1,
-    backgroundColor: '#ccc',
+    backgroundColor: '#e0e0e0',
   },
   messageContainer: {
     marginVertical: 4, // Reduced margin to decrease spacing between messages

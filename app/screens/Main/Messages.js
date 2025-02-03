@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, ActivityIndicator, Image } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, Dimensions, ActivityIndicator, Image, RefreshControl, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
 import Icon from 'react-native-vector-icons/Feather';
 import MaterialCommunityIcon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -8,18 +8,24 @@ import MessageHeader from '../../components/Messages/MessageHeader';
 import ChatCard from '../../components/Messages/ChatCard';
 import GroupCreationModal from '../../components/Messages/GroupCreationModal';
 import { useNavigation } from '@react-navigation/native';
-import { getFirestore, collection, query, getDocs, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, collection, query, getDocs, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useColorScheme } from 'react-native';
 import AntDesign from '@expo/vector-icons/AntDesign';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const PeopleTab = ({ users, loading }) => {
+// Enable LayoutAnimation for Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const PeopleTab = ({ users, loading, onRefresh, refreshing }) => {
   const navigation = useNavigation();
   const colorScheme = useColorScheme();
   const themePrimaryColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE;
 
+  // Users are already sorted in parent component
   if (loading) {
     return <ActivityIndicator size="large" color={themePrimaryColor} style={styles.loadingIndicator} />;
   }
@@ -27,16 +33,21 @@ const PeopleTab = ({ users, loading }) => {
   return (
     <FlatList
       data={users}
-      renderItem={({ item }) => (
-        <ChatCard chat={item} />
-      )}
+      renderItem={({ item }) => <ChatCard chat={item} />}
       keyExtractor={item => item.id}
       contentContainerStyle={styles.listContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[themePrimaryColor]}
+        />
+      }
     />
   );
 };
 
-const GroupsTab = ({ groups, loading }) => {
+const GroupsTab = ({ groups, loading, onRefresh, refreshing }) => {
   const navigation = useNavigation();
   const colorScheme = useColorScheme();
   const themePrimaryColor = colorScheme === 'light' ? Colors.PRIMARY : Colors.WHITE;
@@ -62,6 +73,13 @@ const GroupsTab = ({ groups, loading }) => {
       )}
       keyExtractor={item => item.id}
       contentContainerStyle={styles.listContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[themePrimaryColor]}
+        />
+      }
     />
   );
 };
@@ -77,6 +95,7 @@ export default function Messages() {
   const [searchText, setSearchText] = useState('');
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const colorScheme = useColorScheme();
 
   const fetchUsers = async () => {
@@ -85,28 +104,45 @@ export default function Messages() {
       const currentUser = auth.currentUser;
       const db = getFirestore();
       const usersRef = collection(db, 'users');
-      const querySnapshot = await getDocs(usersRef);
-      const usersData = querySnapshot.docs.map(doc => {
+      
+      // Create a query to get all users and their last messages
+      const usersQuery = query(usersRef);
+      const querySnapshot = await getDocs(usersQuery);
+      
+      const usersData = await Promise.all(querySnapshot.docs.map(async doc => {
         const data = doc.data();
+        const chatId = [currentUser.email, data.email].sort().join('_');
+        const messagesRef = collection(db, 'chats', chatId, 'messages');
+        const lastMessageQuery = query(messagesRef, orderBy('timestamp', 'desc'), limit(1));
+        const lastMessageSnap = await getDocs(lastMessageQuery);
+        
+        const lastMessage = lastMessageSnap.docs[0]?.data();
+        
         return {
           id: doc.id,
           name: `${data.firstName} ${data.lastName}`,
-          profileImage: data.avatar || 'default_avatar_url', // Ensure a default avatar URL if none is provided
-          time: data.lastMessageTime ? new Date(data.lastMessageTime.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
-          message: data.lastMessage || 'Select chat to start messaging',
+          profileImage: data.avatar || 'default_avatar_url',
           email: data.email,
-          lastMessageTime: data.lastMessageTime ? new Date(data.lastMessageTime.seconds * 1000) : null,
+          lastMessage: lastMessage?.text || 'Select chat to start messaging',
+          lastMessageTime: lastMessage?.timestamp || null,
         };
-      }).filter(user => user.email !== currentUser.email); // Filter out the authenticated user
+      }));
 
-      // Sort users by lastMessageTime in descending order
-      usersData.sort((a, b) => b.lastMessageTime - a.lastMessageTime);
+      // Filter out current user and sort by lastMessageTime
+      const filteredUsers = usersData
+        .filter(user => user.email !== currentUser.email)
+        .sort((a, b) => {
+          const aTime = a.lastMessageTime?.seconds || 0;
+          const bTime = b.lastMessageTime?.seconds || 0;
+          return bTime - aTime;
+        });
 
-      setUsers(usersData);
+      setUsers(filteredUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -135,23 +171,68 @@ export default function Messages() {
       console.error("Error fetching groups:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     const auth = getAuth();
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // User is signed in, fetch data
-        setLoading(true);
-        fetchUsers();
-        fetchGroups();
-      }
+    const db = getFirestore();
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) return;
+
+    setLoading(true);
+
+    // Real-time listener for all chats
+    const unsubscribeChats = users.map(user => {
+      const chatId = [currentUser.email, user.email].sort().join('_');
+      const messagesRef = collection(db, 'chats', chatId, 'messages');
+      const lastMessageQuery = query(messagesRef, orderBy('timestamp', 'desc'), limit(1));
+
+      return onSnapshot(lastMessageQuery, (snapshot) => {
+        if (!snapshot.empty) {
+          const lastMessage = snapshot.docs[0].data();
+          
+          // Update users array with new message
+          setUsers(prevUsers => {
+            const newUsers = [...prevUsers];
+            const userIndex = newUsers.findIndex(u => u.email === user.email);
+            
+            if (userIndex !== -1) {
+              newUsers[userIndex] = {
+                ...newUsers[userIndex],
+                lastMessage: lastMessage.text,
+                lastMessageTime: lastMessage.timestamp,
+              };
+            }
+
+            // Sort users by last message timestamp
+            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+            return newUsers.sort((a, b) => {
+              const aTime = a.lastMessageTime?.seconds || 0;
+              const bTime = b.lastMessageTime?.seconds || 0;
+              return bTime - aTime;
+            });
+          });
+        }
+      });
     });
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+    // Initial fetch
+    fetchUsers();
+    fetchGroups();
+
+    return () => {
+      unsubscribeChats.forEach(unsubscribe => unsubscribe());
+    };
   }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchUsers();
+    fetchGroups();
+  };
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -163,8 +244,8 @@ export default function Messages() {
   );
 
   const renderScene = SceneMap({
-    chats: () => <PeopleTab users={filteredUsers} loading={loading} />,
-    groups: () => <GroupsTab groups={filteredGroups} loading={loading} />,
+    chats: () => <PeopleTab users={filteredUsers} loading={loading} onRefresh={onRefresh} refreshing={refreshing} />,
+    groups: () => <GroupsTab groups={filteredGroups} loading={loading} onRefresh={onRefresh} refreshing={refreshing} />,
   });
 
   const handleAddNewChat = () => {

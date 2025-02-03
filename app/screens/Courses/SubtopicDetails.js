@@ -1,39 +1,103 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Dimensions, ActivityIndicator, useColorScheme } from 'react-native';
 import { Video } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../../assets/Utils/Colors';
 import { useNavigation } from '@react-navigation/native';
 import { RichEditor, RichToolbar } from 'react-native-pell-rich-editor';
-import demoVideo from '../../../assets/videos/welcome.mp4';
+import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
 import AntDesign from '@expo/vector-icons/AntDesign';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import RenderHtml from 'react-native-render-html';
+import { decode } from 'html-entities';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const SubtopicDetails = ({ route }) => {
-    const { subtopic } = route.params;
+    const { subtopic, courseId, userId } = route.params;
+    const [content, setContent] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('transcripts');
     const [notes, setNotes] = useState('');
     const navigation = useNavigation();
-    
-    // Create a ref for the RichEditor
     const editorRef = useRef(null);
+    const colorScheme = useColorScheme();
 
-   
-    const handleFullscreen = () => {
-        // Handle fullscreen toggle
-        setOrientationLocked(true);
+    useEffect(() => {
+        const fetchContent = async () => {
+            try {
+                const db = getFirestore();
+                const courseRef = doc(db, 'courses', courseId);
+                const courseDoc = await getDoc(courseRef);
+
+                if (!courseDoc.exists()) {
+                    throw new Error('Course not found');
+                }
+
+                const courseData = courseDoc.data();
+                const curriculum = courseData.curriculum || [];
+
+                // Find the specific submodule content
+                let submoduleContent = null;
+                curriculum.forEach(module => {
+                    const foundSubmodule = module.subModules.find(
+                        sub => sub.title === subtopic.title
+                    );
+                    if (foundSubmodule) {
+                        submoduleContent = foundSubmodule.content;
+                    }
+                });
+
+                if (!submoduleContent) {
+                    throw new Error('Content not found');
+                }
+
+                setContent(decode(submoduleContent));
+            } catch (err) {
+                console.error("Error fetching content:", err);
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchContent();
+    }, [courseId, subtopic]);
+
+    const handleMarkAsComplete = async () => {
+        try {
+            const db = getFirestore();
+            const enrollmentRef = doc(db, 'enrollments', userId);
+            await updateDoc(enrollmentRef, {
+                progress: 'completed' // Update this field as needed
+            });
+            alert('Marked as complete!');
+        } catch (err) {
+            console.error("Error updating progress:", err);
+            alert('Failed to update progress.');
+        }
     };
 
-    const handleExitFullscreen = () => {
-        // Handle exit fullscreen
-        setOrientationLocked(false);
-    };
+    if (loading) {
+        return (
+            <View style={[styles.container, styles.centerContent]}>
+                <ActivityIndicator size="large" color={Colors.PRIMARY} />
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={[styles.container, styles.centerContent]}>
+                <Text style={{ color: 'red' }}>{error}</Text>
+            </View>
+        );
+    }
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
+        <View style={[styles.container, colorScheme === 'dark' && styles.darkContainer]}>
+            <View style={[styles.header, colorScheme === 'dark' && styles.darkHeader]}>
                 <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
                     <Ionicons name="chevron-back" size={32} color={Colors.WHITE} />
                 </TouchableOpacity>
@@ -42,34 +106,85 @@ const SubtopicDetails = ({ route }) => {
             <ScrollView contentContainerStyle={styles.scrollContainer}>
                 {subtopic.type === 'video' && (
                     <Video
-                        source={demoVideo}
+                        source={{ uri: content }}
                         style={styles.subtopicVideo}
                         useNativeControls
                         resizeMode="cover"
-                        onFullscreenUpdate={({ status }) => {
-                            if (status === Video.FULLSCREEN_UPDATE_PLAYER_DID_ENTER_FULLSCREEN) {
-                                handleFullscreen();
-                            } else if (status === Video.FULLSCREEN_UPDATE_PLAYER_DID_EXIT_FULLSCREEN) {
-                                handleExitFullscreen();
-                            }
-                        }}
                     />
                 )}
                 {subtopic.type === 'text' && (
-                    <View style={styles.textContainer}>
-                        <Text style={styles.textTitle}>Text Content</Text>
-                        <Text style={styles.textContent}>
-                            This is a sample text content for the subtopic. It will be displayed when the subtopic type is 'text', you can also add images .
-                        </Text>
-                        <TouchableOpacity style={styles.submitButton}>
+                    <View style={[styles.textContainer, colorScheme === 'dark' && styles.darkTextContainer]}>
+                        <RenderHtml
+                             contentWidth={screenWidth - 40} // Account for padding
+                             source={{ html: content }}
+                             baseStyle={{
+                                fontFamily: 'System',  // Default system font
+                                color: colorScheme === 'dark' ? '#fff' : '#000',
+                                fontSize: 14
+                            }}
+                             tagsStyles={{
+                                 p: { 
+                                     marginBottom: 8, 
+                                     color: colorScheme === 'dark' ? '#fff' : '#000',
+                                     fontFamily: 'Poppins',
+                                     fontSize: 16,
+                                     lineHeight: 20,
+                                     fontWeight: 'normal'
+                                 },
+                                 b: { 
+                                     fontWeight: 'bold', 
+                                     color: colorScheme === 'dark' ? '#fff' : '#000',
+                                     fontFamily: 'Poppins-Bold'
+                                 },
+                                 ul: { 
+                                     marginVertical: 8,
+                                     color: colorScheme === 'dark' ? '#fff' : '#000',
+                                     fontFamily: 'Poppins'
+                                 },
+                                 li: { 
+                                     marginBottom: 4,
+                                     color: colorScheme === 'dark' ? '#fff' : '#000',
+                                     fontFamily: 'Poppins',
+                                     fontSize: 16,
+
+                                     
+                                 },
+                                 img: { 
+                                     maxWidth: screenWidth - 80, // Account for container padding
+                                     height: 200,
+                                     alignSelf: 'center',
+                                     resizeMode: 'contain',
+                                     borderRadius: 8
+                                 },
+                                 h1: {
+                                     fontFamily: 'Poppins-Bold',
+                                     fontSize: 24,
+                                     marginVertical: 12,
+                                     color: colorScheme === 'dark' ? '#fff' : '#000'
+                                 },
+                                 h2: {
+                                    fontFamily: 'Poppins-SemiBold',
+                                    fontSize: 20,
+                                    marginVertical: 10,
+                                    color: colorScheme === 'dark' ? '#fff' : '#000'
+                                },
+                                h3: {
+                                    fontFamily: 'Poppins-Medium',
+                                    fontSize: 18,
+                                    marginVertical: 8,
+                                    color: colorScheme === 'dark' ? '#fff' : '#000'
+                                }
+                            }}
+                        />
+                        <TouchableOpacity style={styles.submitButton} onPress={handleMarkAsComplete}>
                             <Text style={styles.submitButtonText}>Mark as Complete</Text>
                         </TouchableOpacity>
                     </View>
                 )}
                 {subtopic.type === 'quiz' && (
-                    <View style={styles.quizContainer}>
-                        <Text style={styles.quizTitle}>Quiz Content</Text>
-                        <Text style={styles.quizDescription}>
+                    <View style={[styles.quizContainer, colorScheme === 'dark' && styles.darkQuizContainer]}>
+                        <Text style={[styles.quizTitle, colorScheme === 'dark' && styles.darkQuizTitle]}>Quiz Content</Text>
+                        <Text style={[styles.quizDescription, colorScheme === 'dark' && styles.darkQuizDescription]}>
                             This is a sample quiz content. Here you can display quiz instructions, questions, and options for the user to interact with.
                         </Text>
                         <TouchableOpacity style={styles.startQuizButton}>
@@ -100,20 +215,20 @@ const SubtopicDetails = ({ route }) => {
                     </View>
                 )}
                 {subtopic.type === 'video' && activeTab === 'transcripts' && (
-                    <Text style={styles.transcriptText}>Transcripts content...</Text>
+                    <Text style={[styles.transcriptText, colorScheme === 'dark' && styles.darkTranscriptText]}>Transcripts content...</Text>
                 )}
                 {activeTab === 'notes' && (
                     <View style={styles.notesContainer}>
                         <RichEditor
                             ref={editorRef}  // Assign ref to RichEditor
-                            style={styles.notesEditor}
+                            style={[styles.notesEditor, colorScheme === 'dark' && styles.darkNotesEditor]}
                             initialContentHTML={notes}
                             onChange={setNotes}
                         />
                         <RichToolbar
                             editor={editorRef}  // Pass ref to RichToolbar
                             actions={['bold', 'italic', 'underline', 'strikethrough', 'heading1', 'heading2', 'insertOrderedList', 'insertUnorderedList']}
-                            style={styles.toolbar}
+                            style={[styles.toolbar, colorScheme === 'dark' && styles.darkToolbar]}
                         />
                         <TouchableOpacity style={styles.submitButton}>
                             <Text style={styles.submitButtonText}>Add Notes</Text>
@@ -156,6 +271,9 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff',
     },
+    darkContainer: {
+        backgroundColor: '#000',
+    },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -167,6 +285,9 @@ const styles = StyleSheet.create({
         borderBottomLeftRadius: 40,
         borderBottomRightRadius: 40,
         position: 'relative',
+    },
+    darkHeader: {
+        backgroundColor: Colors.DARK_PRIMARY,
     },
     backButton: {
         position: 'absolute',
@@ -200,6 +321,9 @@ const styles = StyleSheet.create({
         backgroundColor: '#f5f5f5',
         borderRadius: 10,
     },
+    darkTextContainer: {
+        backgroundColor: '#333',
+    },
     textTitle: {
         fontSize: screenWidth * 0.04,
         fontFamily: 'Poppins-Medium',
@@ -209,6 +333,9 @@ const styles = StyleSheet.create({
         fontSize: screenWidth * 0.035,
         fontFamily: 'Poppins',
     },
+    darkTextContent: {
+        color: '#fff',
+    },
     quizContainer: {
         marginBottom: 20,
         marginTop: 20,
@@ -216,15 +343,24 @@ const styles = StyleSheet.create({
         backgroundColor: '#f5f5f5',
         borderRadius: 10,
     },
+    darkQuizContainer: {
+        backgroundColor: '#333',
+    },
     quizTitle: {
         fontSize: screenWidth * 0.04,
         fontFamily: 'Poppins-Medium',
         marginBottom: 10,
     },
+    darkQuizTitle: {
+        color: '#fff',
+    },
     quizDescription: {
         fontSize: screenWidth * 0.035,
         fontFamily: 'Poppins',
         marginBottom: 20,
+    },
+    darkQuizDescription: {
+        color: '#ccc',
     },
     startQuizButton: {
         backgroundColor: Colors.PRIMARY,
@@ -243,6 +379,9 @@ const styles = StyleSheet.create({
         fontFamily: 'Poppins-Medium',
         color: Colors.SECONDARY,
     },
+    darkTranscriptText: {
+        color: '#ccc',
+    },
     notesContainer: {
         marginBottom: 20,
     },
@@ -251,10 +390,17 @@ const styles = StyleSheet.create({
         borderColor: '#ddd',
         borderWidth: 1,
         borderRadius: 5,
-        borderRadius: 5,
+    },
+    darkNotesEditor: {
+        backgroundColor: '#333',
+        color: '#fff',
     },
     toolbar: {
         borderTopColor: '#ddd',
+    },
+    darkToolbar: {
+        backgroundColor: '#333',
+        borderTopColor: '#555',
     },
     submitButton: {
         backgroundColor: Colors.PRIMARY,
@@ -266,7 +412,6 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'center',
         gap: 5
-
     },
     submitButtonText: {
         color: Colors.WHITE,
@@ -292,7 +437,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 20,
         marginTop: 20,
-       
     },
     likeButton: {
         flexDirection: 'row',

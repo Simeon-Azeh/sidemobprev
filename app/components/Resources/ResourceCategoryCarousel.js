@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, Dimensions } from 'react-native';
 import Carousel from 'react-native-snap-carousel';
-import { MaterialIcons, Entypo, FontAwesome } from '@expo/vector-icons';
+import { MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useColorScheme } from 'react-native';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-
 import Colors from '../../../assets/Utils/Colors';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -20,23 +18,16 @@ const ResourceCategoryCarousel = ({ title, data }) => {
   const navigation = useNavigation(); // Initialize navigation hook
   const colorScheme = useColorScheme(); // Get the current color scheme
 
-  const handlePress = async (item) => {
-    const db = getFirestore();
-    const docRef = doc(db, 'pdfDocuments', item.id);
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const fileURL = docSnap.data().fileURL;
-      navigation.navigate('ResourceDocs', {
-        fileURL,
-        title: item.title,
-        exam: item.exam,
-        year: item.year,
-        level: item.level,
-      });
-    } else {
-      console.log('No such document!');
-    }
+  const handlePress = (item) => {
+    navigation.navigate('ResourceDocs', {
+      images: item.images,
+      title: item.title,
+      exam: item.exam,
+      year: item.year,
+      level: item.level,
+      totalPages: item.totalPages,
+      paper: item.paper,
+    });
   };
 
   const renderItem = ({ item }) => (
@@ -212,8 +203,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
     padding: 10,
-    width: screenWidth * 0.45,
-    margin: screenWidth * 0.015, // Reduced margin for grid items
+    width: screenWidth * 0.48,
+    margin: screenWidth * 0.012, // Reduced margin for grid items
   },
   listItemContainer: {
     borderRadius: 8,

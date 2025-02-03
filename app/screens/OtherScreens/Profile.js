@@ -15,9 +15,12 @@ import Profileavatar from '../../../assets/Images/avatar4.jpg';
 import Colors from '../../../assets/Utils/Colors';
 import { FontAwesome } from '@expo/vector-icons'; // FontAwesome
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5'; // FontAwesome5
+import { Ionicons } from '@expo/vector-icons'; // Ionicons
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, storage } from '../../../firebaseConfig';
 import { getDownloadURL, ref } from 'firebase/storage';
+import { useNavigation } from '@react-navigation/native';
+import { useColorScheme } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -28,6 +31,8 @@ export default function Profile() {
   const [badges, setBadges] = useState([]);
   const [totalCoins, setTotalCoins] = useState(0);
   const [nextBadgeText, setNextBadgeText] = useState('');
+  const navigation = useNavigation();
+  const colorScheme = useColorScheme();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -90,19 +95,17 @@ export default function Profile() {
           setBadges(newBadges);
 
           // Set motivational text based on next badge
-         // Set motivational text based on next badge
-if (coins < 50) {
-  setNextBadgeText('🚀 Just starting out? Keep going! The Bronze Badge awaits you! 🏅');
-} else if (coins < 150) {
-  setNextBadgeText('🌟 Great progress! The Silver Badge is within your reach. Keep shining! 💪');
-} else if (coins < 400) {
-  setNextBadgeText('🏆 You’re on fire! The Gold Badge is just a few steps away. Go for it! 🔥');
-} else if (coins < 700) {
-  setNextBadgeText('💎 Amazing work! The Platinum Badge is calling your name. Keep learning! 📚');
-} else {
-  setNextBadgeText('🎉 Incredible achievement! You’ve earned all the badges! Keep being awesome! 🥳');
-}
-
+          if (coins < 50) {
+            setNextBadgeText('🚀 Just starting out? Keep going! The Bronze Badge awaits you! 🏅');
+          } else if (coins < 150) {
+            setNextBadgeText('🌟 Great progress! The Silver Badge is within your reach. Keep shining! 💪');
+          } else if (coins < 400) {
+            setNextBadgeText('🏆 You’re on fire! The Gold Badge is just a few steps away. Go for it! 🔥');
+          } else if (coins < 700) {
+            setNextBadgeText('💎 Amazing work! The Platinum Badge is calling your name. Keep learning! 📚');
+          } else {
+            setNextBadgeText('🎉 Incredible achievement! You’ve earned all the badges! Keep being awesome! 🥳');
+          }
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -128,28 +131,34 @@ if (coins < 50) {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={[styles.container, colorScheme === 'dark' && styles.darkContainer]}>
       {/* Header Section */}
-      <View style={styles.header}>
+      <View style={[styles.header, colorScheme === 'dark' && styles.darkHeader]}>
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="chevron-back" size={32} color={Colors.WHITE} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
+          <Ionicons name="settings-outline" size={32} color={Colors.WHITE} />
+        </TouchableOpacity>
         <Image
           source={userData.avatar ? { uri: userData.avatar } : Profileavatar}
           style={styles.avatar}
         />
-        <Text style={styles.name}>{`${userData.firstName || ''} ${userData.lastName || ''}`}</Text>
-        <Text style={styles.bio}>{userData.bio || 'No bio available'}</Text>
+        <Text style={[styles.name, colorScheme === 'dark' && styles.darkText]}>{`${userData.firstName || ''} ${userData.lastName || ''}`}</Text>
+        <Text style={[styles.bio, colorScheme === 'dark' && styles.darkText]}>{userData.bio || 'No bio available'}</Text>
       </View>
 
       {/* Stats Section */}
       <View style={styles.statsContainer}>
-        <StatBox title="Courses Enrolled" value={enrollments} />
-        <StatBox title="Courses Completed" value={userData.coursesCompleted || '0'} />
-        <StatBox title="Total Coins" value={totalCoins} />
+        <StatBox title="Courses Enrolled" value={enrollments} colorScheme={colorScheme} />
+        <StatBox title="Courses Completed" value={userData.coursesCompleted || '0'} colorScheme={colorScheme} />
+        <StatBox title="Total Coins" value={totalCoins} colorScheme={colorScheme} />
       </View>
 
       {/* Badges Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Badges</Text>
-        <View style={styles.badgesContainer}>
+        <Text style={[styles.sectionTitle, colorScheme === 'dark' && styles.darkText]}>Badges</Text>
+        <View style={[styles.badgesContainer, colorScheme === 'dark' && styles.darkBadgesContainer]}>
           {badges.length > 0 ? (
             badges.map(badge => (
               <TouchableOpacity key={badge.id} onPress={() => Alert.alert(badge.name, badge.description)}>
@@ -158,8 +167,8 @@ if (coins < 50) {
             ))
           ) : (
             <View style={styles.noBadgesContainer}>
-              <FontAwesome5 name="medal" size={50} color={Colors.SECONDARY} />
-              <Text style={styles.noBadgesText}>Start learning to earn coins and win badges!</Text>
+              <FontAwesome5 name="medal" size={50} color={colorScheme === 'dark' ? Colors.WHITE : Colors.SECONDARY} />
+              <Text style={[styles.noBadgesText, colorScheme === 'dark' && styles.darkText]}>Start learning to earn coins and win badges!</Text>
             </View>
           )}
         </View>
@@ -168,34 +177,34 @@ if (coins < 50) {
       {/* Motivational Text */}
       {badges.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{nextBadgeText}</Text>
+          <Text style={[styles.sectionTitle, colorScheme === 'dark' && styles.darkText]}>{nextBadgeText}</Text>
         </View>
       )}
 
       {/* Quick Actions Section */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <Text style={[styles.sectionTitle, colorScheme === 'dark' && styles.darkText]}>Quick Actions</Text>
         <View style={styles.quickActionsContainer}>
-          <QuickActionBox icon="chalkboard-teacher" text="Become a Tutor" isFontAwesome5 link="https://example.com/become-a-tutor" />
-          <QuickActionBox icon="question-circle" text="Need Support" link="https://example.com/support" />
-          <QuickActionBox icon="user-plus" text="Invite Friends" link="https://example.com/invite-friends" />
-          <QuickActionBox icon="eye" text="Change Visibility" />
+          <QuickActionBox icon="chalkboard-teacher" text="Become a Tutor" isFontAwesome5 link="https://example.com/become-a-tutor" colorScheme={colorScheme} />
+          <QuickActionBox icon="question-circle" text="Need Support" link="https://example.com/support" colorScheme={colorScheme} />
+          <QuickActionBox icon="user-plus" text="Invite Friends" link="https://example.com/invite-friends" colorScheme={colorScheme} />
+          <QuickActionBox icon="eye" text="Change Visibility" colorScheme={colorScheme} />
         </View>
       </View>
     </ScrollView>
   );
 }
 
-function StatBox({ title, value }) {
+function StatBox({ title, value, colorScheme }) {
   return (
-    <View style={styles.statBox}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statTitle}>{title}</Text>
+    <View style={[styles.statBox, colorScheme === 'dark' && styles.darkStatBox]}>
+      <Text style={[styles.statValue, colorScheme === 'dark' && styles.darkText]}>{value}</Text>
+      <Text style={[styles.statTitle, colorScheme === 'dark' && styles.darkText]}>{title}</Text>
     </View>
   );
 }
 
-function QuickActionBox({ icon, text, isFontAwesome5 = false, link }) {
+function QuickActionBox({ icon, text, isFontAwesome5 = false, link, colorScheme }) {
   const handlePress = () => {
     if (link) {
       Linking.openURL(link).catch(err => console.error('An error occurred', err));
@@ -205,13 +214,13 @@ function QuickActionBox({ icon, text, isFontAwesome5 = false, link }) {
   };
 
   return (
-    <TouchableOpacity style={styles.quickActionBox} onPress={handlePress}>
+    <TouchableOpacity style={[styles.quickActionBox, colorScheme === 'dark' && styles.darkQuickActionBox]} onPress={handlePress}>
       {isFontAwesome5 ? (
-        <FontAwesome5 name={icon} size={24} color={Colors.SECONDARY} />
+        <FontAwesome5 name={icon} size={24} color={colorScheme === 'dark' ? Colors.WHITE : Colors.SECONDARY} />
       ) : (
-        <FontAwesome name={icon} size={24} color={Colors.SECONDARY} />
+        <FontAwesome name={icon} size={24} color={colorScheme === 'dark' ? Colors.WHITE : Colors.SECONDARY} />
       )}
-      <Text style={styles.quickActionText}>{text}</Text>
+      <Text style={[styles.quickActionText, colorScheme === 'dark' && styles.darkQuickActionText]}>{text}</Text>
     </TouchableOpacity>
   );
 }
@@ -228,6 +237,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 20,
   },
+  darkContainer: {
+    backgroundColor: '#000',
+  },
   header: {
     width: '100%',
     alignItems: 'center',
@@ -235,6 +247,22 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
     borderBottomLeftRadius: 0,
     borderBottomRightRadius: 20,
+    position: 'relative',
+  },
+  darkHeader: {
+    backgroundColor: Colors.DARK_PRIMARY,
+  },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+  },
+  settingsButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
   },
   avatar: {
     width: screenWidth * 0.25,
@@ -252,6 +280,9 @@ const styles = StyleSheet.create({
   name: {
     fontSize: screenWidth * 0.04,
     fontFamily: 'Poppins-SemiBold',
+    color: Colors.WHITE,
+  },
+  darkText: {
     color: Colors.WHITE,
   },
   bio: {
@@ -280,6 +311,10 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     textAlign: 'center',
   },
+  darkStatBox: {
+    backgroundColor: Colors.DARK_SECONDARY,
+    borderColor: Colors.DARK_SECONDARY,
+  },
   statValue: {
     fontSize: screenWidth * 0.06,
     fontFamily: 'Poppins-SemiBold',
@@ -305,12 +340,15 @@ const styles = StyleSheet.create({
   badgesContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-     backgroundColor: '#f0f0f0',
+    backgroundColor: '#f0f0f0',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    backgroundColor: '#f0f0f0',
-   padding: 10,
+    padding: 10,
+  },
+  darkBadgesContainer: {
+    backgroundColor: Colors.DARK_SECONDARY,
+    borderColor: Colors.DARK_SECONDARY,
   },
   badge: {
     width: screenWidth * 0.15,
@@ -318,9 +356,6 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     borderWidth: 1,
     borderColor: Colors.PRIMARY,
-    paddingTop: 40,
-  
-    
   },
   noBadgesContainer: {
     alignItems: 'center',
@@ -347,11 +382,17 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 10,
   },
+  darkQuickActionBox: {
+    backgroundColor: Colors.DARK_SECONDARY,
+  },
   quickActionText: {
     marginTop: 10,
     fontSize: screenWidth * 0.035,
     fontFamily: 'Poppins-Medium',
     color: Colors.SECONDARY,
     textAlign: 'center',
+  },
+  darkQuickActionText: {
+    color: Colors.WHITE,
   },
 });

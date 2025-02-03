@@ -210,10 +210,7 @@ export default function App() {
         <Stack.Screen 
           name="Profile" 
           component={Profile} 
-          options={{ 
-            title: 'Profile', 
-            headerTitle: () => <CustomHeaderTitle title="Profile" /> 
-          }} 
+          options={{ headerShown: false }}
         />
         <Stack.Screen 
           name="TutorDetails" 
@@ -223,20 +220,16 @@ export default function App() {
             headerTitle: () => <CustomHeaderTitle title="Tutor Details" /> 
           }} 
         />
-        <Stack.Screen name="SavedCourses" component={SavedCourses} options={{ title: 'Saved Courses',
-          headerTitle: () => <CustomHeaderTitle title="Saved Courses" />
-         }} />
+        <Stack.Screen name="SavedCourses" component={SavedCourses} options={{ headerShown: false }}/>
         <Stack.Screen name="Certificates" component={Certificate} options={{ title: 'Certificates',
           headerTitle: () => <CustomHeaderTitle title="Certificates" />
          }} />
         <Stack.Screen name="CourseEnrolment" component={CourseEnrolment} options={{ headerShown: false }} />
         <Stack.Screen name="ResourceDocs" component={ResourceDocs} options={{ headerShown: false }} />
-        <Stack.Screen name="Notifications" component={Notifications} options={{ title: 'Notifications',
-          headerTitle: () => <CustomHeaderTitle title="Notifications" />
-         }} />
-        <Stack.Screen name="FAQS" component={FAQScreen} options={{ title: 'FAQ',
-          headerTitle: () => <CustomHeaderTitle title="FAQ" />
-         }} />
+        <Stack.Screen name="Notifications" component={Notifications} options={{ headerShown: false }} />
+  
+        <Stack.Screen name="FAQS" component={FAQScreen} options={{ headerShown: false }}/>
+        
         <Stack.Screen name="Contact" component={ContactScreen} options={{ title: 'Contact',
           headerTitle: () => <CustomHeaderTitle title="Contact" />
          }} />

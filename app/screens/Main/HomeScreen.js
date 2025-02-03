@@ -52,7 +52,7 @@ export default function HomeScreen() {
             courses.push({
               id: enrollmentDoc.id,
               title: courseData.title,
-              image: courseData.image,
+              image: courseData.cover || data.courseImage || 'https://via.placeholder.com/150', // Use cover from courses or fallback to courseImage from Enrollments
               category: courseData.category || 'Unknown',
               progress: data.progress || 0,
             });
@@ -107,6 +107,7 @@ export default function HomeScreen() {
             borderWidth: 1,
             borderColor: Colors.WHITE,
           }}
+          onError={(error) => console.error('Error loading image:', error)}
         />
         <View style={{
           flex: 1,
@@ -268,7 +269,7 @@ export default function HomeScreen() {
                 fontFamily: 'Poppins-Medium',
               }}
             >
-              Enrolled Courses
+              Continue Learning
             </Text>
             <Feather
               name="chevron-right"
